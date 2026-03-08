@@ -15,10 +15,11 @@ export class OpenAIProvider implements LLMProvider {
     const openaiMessages = messages.map(toOpenAIMessage);
     const tools = options.tools?.map(toOpenAITool);
 
+    const maxTokens = options.max_tokens ?? 4096;
     const response = await this.client.chat.completions.create({
       model: options.model,
       temperature: options.temperature,
-      max_tokens: options.max_tokens ?? 4096,
+      max_completion_tokens: maxTokens,
       messages: openaiMessages,
       ...(tools?.length ? { tools } : {}),
     });
