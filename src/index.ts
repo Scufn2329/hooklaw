@@ -1,4 +1,4 @@
-import pino from 'pino';
+import { createLogger } from './logger.js';
 import { loadConfig } from './config.js';
 import { initDb, getExecutionsByHook, getExecutionsByRecipe, cleanOldExecutions } from './db.js';
 import { HookQueue } from './queue.js';
@@ -6,7 +6,7 @@ import { createServer, startServer } from './server.js';
 import { processWebhook, getRecipesForSlug } from './router.js';
 import type { AppConfig } from './types.js';
 
-const logger = pino({ name: 'hooklaw' });
+const logger = createLogger('hooklaw');
 
 export interface BootstrapOptions {
   configPath?: string;

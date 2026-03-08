@@ -1,11 +1,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import pino from 'pino';
+import { createLogger } from './logger.js';
 import type { McpServerConfig } from './types.js';
 import type { ToolDefinition } from './providers/base.js';
 
-const logger = pino({ name: 'hooklaw:mcp' });
+const logger = createLogger('hooklaw:mcp');
 
 export interface McpConnection {
   name: string;

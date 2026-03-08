@@ -1,8 +1,8 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type http from 'node:http';
-import pino from 'pino';
+import { createLogger } from './logger.js';
 
-const logger = pino({ name: 'hooklaw:server' });
+const logger = createLogger('hooklaw:server');
 
 export interface ServerDeps {
   getSlugConfig: (slug: string) => { enabled: boolean; mode: string } | undefined;

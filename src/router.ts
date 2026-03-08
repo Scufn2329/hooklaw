@@ -1,4 +1,4 @@
-import pino from 'pino';
+import { createLogger } from './logger.js';
 import type Database from 'better-sqlite3';
 import { createExecution, updateExecution } from './db.js';
 import { executeAgent } from './agent.js';
@@ -7,7 +7,7 @@ import { McpPool } from './mcp.js';
 import { HookQueue } from './queue.js';
 import type { AppConfig, RecipeConfig } from './types.js';
 
-const logger = pino({ name: 'hooklaw:router' });
+const logger = createLogger('hooklaw:router');
 
 export interface RouterDeps {
   config: AppConfig;

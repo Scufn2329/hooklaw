@@ -1,6 +1,6 @@
-import pino from 'pino';
+import { createLogger } from './logger.js';
 
-const logger = pino({ name: 'hooklaw:queue' });
+const logger = createLogger('hooklaw:queue');
 
 type Task = () => Promise<void>;
 
