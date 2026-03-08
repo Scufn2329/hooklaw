@@ -1,0 +1,73 @@
+# Example: Stripe Payment → Conta Azul Invoice
+#
+# When Stripe sends a payment.succeeded webhook,
+# the AI agent uses Conta Azul MCP to create an invoice.
+#
+# This is HookLaw's killer feature: connect any webhook
+# to any MCP server, with an AI agent orchestrating the flow.
+
+server:
+  port: 3007
+  host: 0.0.0.0
+
+providers:
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+
+# MCP servers (shared across recipes)
+mcp_servers:
+  stripe:
+    transport: stdio
+    command: npx
+    args: ["-y", "@stripe/agent-toolkit", "--tools=all"]
+    env:
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+
+  contaazul:
+    transport: stdio
+    command: npx
+    args: ["-y", "contaazul-mcp"]
+    env:
+      CONTAAZUL_TOKEN: ${CONTAAZUL_TOKEN}
+
+# Recipes connect webhooks → AI agent → MCP tools
+recipes:
+  payment-to-invoice:
+    description: "Auto-create Conta Azul invoice when Stripe payment succeeds"
+    slug: stripe-payment
+    mode: async
+    agent:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.1
+      instructions: |
+        You receive Stripe payment webhook payloads.
+
+        When a payment.succeeded event arrives:
+        1. Extract the customer name, email, and payment amount
+        2. Use the Stripe tools to get full customer details if needed
+        3. Use the Conta Azul tools to create an invoice with:
+           - Customer name and email
+           - Payment amount
+           - Description: "Payment via Stripe - [charge ID]"
+
+        If the event is not payment.succeeded, respond with "Skipped: [event type]".
+    tools:
+      - stripe
+      - contaazul
+
+  payment-notification:
+    description: "Log successful payments"
+    slug: stripe-payment
+    mode: async
+    agent:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.1
+      instructions: |
+        You receive Stripe payment webhook payloads.
+        Respond with a one-line summary: "[amount] from [customer] via [payment method]".
+    tools: []
+
+logs:
+  retention_days: 90

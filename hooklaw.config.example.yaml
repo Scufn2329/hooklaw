@@ -1,0 +1,54 @@
+# HookLaw Configuration Example
+# Copy to hooklaw.config.yaml and customize
+
+server:
+  port: 3007
+  host: 0.0.0.0
+
+providers:
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+  # openai:
+  #   api_key: ${OPENAI_API_KEY}
+  # openrouter:
+  #   api_key: ${OPENROUTER_API_KEY}
+  # ollama:
+  #   base_url: http://localhost:11434
+
+# MCP servers (shared across recipes, referenced by name)
+mcp_servers:
+  # stripe:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "@stripe/agent-toolkit", "--tools=all"]
+  #   env:
+  #     STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+  # contaazul:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "contaazul-mcp"]
+  # github:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "@modelcontextprotocol/server-github"]
+  #   env:
+  #     GITHUB_TOKEN: ${GITHUB_TOKEN}
+
+# Recipes connect webhooks → AI agents → MCP tools
+recipes:
+  my-recipe:
+    description: "Process incoming webhooks"
+    slug: my-webhook              # webhook URL: POST /h/my-webhook
+    mode: async                   # async | sync
+    agent:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.3
+      instructions: |
+        You process incoming webhook payloads.
+        Analyze the data and take appropriate action.
+    tools: []                     # reference mcp_servers by name
+    # tools: [stripe, contaazul]  # example with MCP tools
+
+logs:
+  retention_days: 30

@@ -1,0 +1,526 @@
+{
+  "name": "HookLaw",
+  "vision": "Plataforma self-hosted de orquestração de webhooks com agentes AI e MCP tools. BYOK, single process Node.js, MIT.",
+  "features": [
+    {
+      "name": "Project Bootstrap",
+      "tasks": [
+        {
+          "id": "1",
+          "title": "Initialize project with package.json, tsconfig, and folder structure",
+          "description": "Create the HookLaw project scaffold:\n- `package.json` with name hooklaw, type module, node >=20, scripts (build, start, dev, test)\n- Dependencies: better-sqlite3, pino, pino-pretty, yaml, zod, commander, uuid\n- DevDependencies: typescript, @types/node, @types/better-sqlite3, tsx, vitest\n- `tsconfig.json` targeting ES2022, module NodeNext, outDir dist, strict true\n- Create directory structure: src/, src/providers/\n- Create empty entry files: src/index.ts, src/types.ts\n- Add .gitignore (node_modules, dist, *.db, .env)\n- Add .env.example with placeholder keys",
+          "priority": 1,
+          "passes": false,
+          "tests": {
+            "command": "npx tsc --noEmit"
+          },
+          "acceptance": [
+            "package.json exists with all listed dependencies",
+            "tsconfig.json exists with strict mode",
+            "Directory structure src/ and src/providers/ exist",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["package.json", "tsconfig.json"],
+            "hints": ["Use ES modules (type: module)", "Target Node 20+"]
+          }
+        },
+        {
+          "id": "2",
+          "title": "Define core types and Zod schemas",
+          "description": "Create src/types.ts with all core types and Zod validation schemas:\n- HookConfig: { name, slug, enabled, mode (async|sync), agent: { provider, model, temperature, system_prompt }, mcp_servers: Array<McpServerConfig> }\n- McpServerConfig: { name, transport (stdio|sse), command?, args?, env?, url? }\n- ProviderConfig: { api_key?, base_url? }\n- ServerConfig: { port, host, auth_token? }\n- AppConfig: { server, providers: Record<string, ProviderConfig>, hooks: Record<string, HookConfig>, mcp_presets?: Record<string, McpPreset>, logs: { retention_days } }\n- Execution: { id, hook_id, status, payload, agent_output, tools_called, duration_ms, error, created_at }\n- Use Zod schemas for all types, export both schemas and inferred types",
+          "priority": 1,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/types.test.ts"
+          },
+          "acceptance": [
+            "All types defined with Zod schemas",
+            "Schema validates a valid config object",
+            "Schema rejects invalid config (missing required fields)",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/types.ts"],
+            "hints": ["Use zod v4 syntax", "Export both z.object schemas and z.infer<> types"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Config System",
+      "tasks": [
+        {
+          "id": "3",
+          "title": "Implement config loader with YAML parsing and env substitution",
+          "description": "Create src/config.ts:\n- loadConfig(path?: string): AppConfig — loads hooklaw.config.yaml from CWD or given path\n- Parse YAML using 'yaml' package\n- Substitute ${ENV_VAR} placeholders with process.env values\n- Validate parsed result against Zod AppConfig schema\n- Throw descriptive error if validation fails\n- Export a getConfig() singleton that caches the loaded config\n- Support dotenv: load .env file if present (use Node built-in --env-file or manual fs read)\n- Write tests: valid config loads, missing env var warns, invalid config throws",
+          "priority": 2,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/config.test.ts"
+          },
+          "acceptance": [
+            "Loads and parses YAML config file",
+            "Substitutes ${ENV_VAR} with process.env values",
+            "Validates against Zod schema",
+            "Throws on invalid config with clear error message",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/config.ts", "src/types.ts"],
+            "hints": ["Use regex /\\$\\{([^}]+)\\}/g for env substitution", "Load .env manually with fs if needed"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Database Layer",
+      "tasks": [
+        {
+          "id": "4",
+          "title": "Implement SQLite database layer with hooks and executions tables",
+          "description": "Create src/db.ts:\n- initDb(dbPath?: string): Database — opens/creates SQLite DB, runs migrations\n- Create tables: hooks (id TEXT PK, name, slug UNIQUE, enabled, mode, config_ref, created_at, updated_at) and executions (id TEXT PK, hook_id FK, status, payload, agent_output, tools_called, duration_ms, error, created_at)\n- CRUD for hooks: createHook, getHook, getHookBySlug, listHooks, updateHook, deleteHook\n- CRUD for executions: createExecution, updateExecution, getExecutionsByHook (with limit/offset), deleteOldExecutions(retentionDays)\n- All functions take db instance as first param\n- Write tests using in-memory SQLite (:memory:)",
+          "priority": 2,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/db.test.ts"
+          },
+          "acceptance": [
+            "Tables created with correct schema on init",
+            "CRUD operations work for hooks table",
+            "CRUD operations work for executions table",
+            "deleteOldExecutions removes entries older than retention",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/db.ts", "src/types.ts"],
+            "hints": ["Use better-sqlite3 synchronous API", "Use uuid for IDs", "Use :memory: for tests"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LLM Providers (BYOK)",
+      "tasks": [
+        {
+          "id": "5",
+          "title": "Create provider interface and Anthropic provider",
+          "description": "Create src/providers/base.ts:\n- Interface LLMProvider: { chat(messages: Message[], options: ChatOptions): Promise<ChatResult> }\n- Message type: { role: 'system'|'user'|'assistant'|'tool', content: string, tool_call_id?, tool_calls? }\n- ChatOptions: { model, temperature?, tools?: ToolDefinition[], max_tokens? }\n- ChatResult: { content: string, tool_calls?: ToolCall[], usage?: { input_tokens, output_tokens } }\n- ToolDefinition: { name, description, input_schema: object }\n- ToolCall: { id, name, arguments: object }\n\nCreate src/providers/anthropic.ts:\n- Implements LLMProvider using @anthropic-ai/sdk\n- Converts tools to Anthropic format\n- Handles tool_use responses, maps back to ChatResult\n- Add @anthropic-ai/sdk to package.json dependencies\n- Write test with mocked SDK",
+          "priority": 3,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/providers/anthropic.test.ts"
+          },
+          "acceptance": [
+            "LLMProvider interface defined with chat method",
+            "AnthropicProvider implements interface",
+            "Tool definitions converted to Anthropic format correctly",
+            "Tool call responses mapped back to ChatResult",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/providers/base.ts", "src/providers/anthropic.ts"],
+            "hints": ["Use @anthropic-ai/sdk", "Anthropic uses tool_use content blocks"]
+          }
+        },
+        {
+          "id": "6",
+          "title": "Implement OpenAI provider",
+          "description": "Create src/providers/openai.ts:\n- Implements LLMProvider using openai SDK\n- Maps ToolDefinition to OpenAI function format\n- Handles function_call / tool_calls responses\n- Maps back to ChatResult\n- Add openai to package.json dependencies\n- Write test with mocked SDK\n\nAlso works for OpenRouter (same API, different base_url).",
+          "priority": 3,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/providers/openai.test.ts"
+          },
+          "acceptance": [
+            "OpenAIProvider implements LLMProvider interface",
+            "Supports custom base_url for OpenRouter/Ollama",
+            "Tool definitions mapped to OpenAI function format",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/providers/openai.ts", "src/providers/base.ts"],
+            "hints": ["OpenRouter uses same API as OpenAI with different base URL", "Ollama also supports OpenAI-compatible API"]
+          }
+        },
+        {
+          "id": "7",
+          "title": "Create provider factory and registry",
+          "description": "Create src/providers/index.ts:\n- createProvider(name: string, config: ProviderConfig): LLMProvider\n- Supports: 'anthropic' → AnthropicProvider, 'openai' → OpenAIProvider, 'openrouter' → OpenAIProvider (with base_url), 'ollama' → OpenAIProvider (with ollama base_url)\n- Throws clear error for unknown provider\n- Caches provider instances (singleton per provider name)\n- Write test: factory creates correct providers, unknown throws",
+          "priority": 3,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/providers/index.test.ts"
+          },
+          "acceptance": [
+            "Factory creates AnthropicProvider for 'anthropic'",
+            "Factory creates OpenAIProvider for 'openai', 'openrouter', 'ollama'",
+            "OpenRouter gets correct base_url",
+            "Unknown provider throws descriptive error",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/providers/index.ts", "src/providers/anthropic.ts", "src/providers/openai.ts"],
+            "hints": ["OpenRouter base URL: https://openrouter.ai/api/v1", "Ollama default: http://localhost:11434/v1"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agent Execution Engine",
+      "tasks": [
+        {
+          "id": "8",
+          "title": "Implement agent executor with tool loop",
+          "description": "Create src/agent.ts:\n- executeAgent(config: { provider: LLMProvider, model, temperature, system_prompt, payload: object, tools?: ToolDefinition[], onToolCall?: (name, args) => Promise<string> }): Promise<AgentResult>\n- AgentResult: { output: string, tools_called: string[], duration_ms: number }\n- Build messages: [system prompt, user message with JSON payload]\n- Implement agentic tool loop: call LLM → if tool_calls, execute via onToolCall callback, feed results back → repeat until no more tool_calls or max iterations (10)\n- Track all tools called\n- Measure duration\n- Write test with mock provider that returns tool calls then final answer",
+          "priority": 4,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/agent.test.ts"
+          },
+          "acceptance": [
+            "Agent sends system prompt + payload to LLM",
+            "Tool loop executes tool calls and feeds results back",
+            "Stops after final text response (no tool calls)",
+            "Stops after max iterations to prevent infinite loops",
+            "Returns output, tools_called list, and duration_ms",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/agent.ts", "src/providers/base.ts"],
+            "hints": ["Max 10 tool loop iterations", "Use performance.now() for timing"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Queue System",
+      "tasks": [
+        {
+          "id": "9",
+          "title": "Implement per-hook execution queue with concurrency control",
+          "description": "Create src/queue.ts:\n- HookQueue class: manages a FIFO queue per hook slug\n- enqueue(slug: string, task: () => Promise<void>): void\n- Concurrency: 1 per hook (sequential processing per hook, parallel across hooks)\n- Handles errors gracefully (logs, continues to next task)\n- drain(): Promise<void> — waits for all queues to empty (for graceful shutdown)\n- getQueueSize(slug: string): number\n- Uses simple array + processing flag pattern (no external deps)\n- Write tests: sequential execution per hook, parallel across hooks, error handling",
+          "priority": 4,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/queue.test.ts"
+          },
+          "acceptance": [
+            "Tasks for same hook execute sequentially",
+            "Tasks for different hooks execute in parallel",
+            "Failed task does not block queue",
+            "drain() resolves when all queues empty",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/queue.ts"],
+            "hints": ["Simple pattern: Map<string, { queue: Task[], processing: boolean }>", "No external queue library needed"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "HTTP Server",
+      "tasks": [
+        {
+          "id": "10",
+          "title": "Implement HTTP server with webhook receiver endpoint",
+          "description": "Create src/server.ts:\n- Uses Node.js built-in http module (no Express)\n- POST /h/:slug — webhook receiver:\n  - Parse JSON body\n  - Look up hook by slug in config\n  - If not found or disabled: 404\n  - If mode async: respond 200 immediately, enqueue processing\n  - If mode sync: process and respond with result\n- GET /health — returns { status: 'ok' }\n- createServer(config, deps: { db, queue, processWebhook }): http.Server\n- Write test: health endpoint, webhook 404 for unknown slug, webhook 200 for valid slug",
+          "priority": 5,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/server.test.ts"
+          },
+          "acceptance": [
+            "GET /health returns 200 with status ok",
+            "POST /h/<valid-slug> returns 200 for async hooks",
+            "POST /h/<unknown-slug> returns 404",
+            "POST /h/<disabled-hook> returns 404",
+            "JSON body parsed correctly",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/server.ts", "src/types.ts"],
+            "hints": ["Use native http module, no Express", "Parse body manually with req.on('data')"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhook Router (Core Orchestration)",
+      "tasks": [
+        {
+          "id": "11",
+          "title": "Implement webhook router that connects server → queue → agent → db",
+          "description": "Create src/router.ts:\n- processWebhook(hookSlug: string, payload: object, deps: { config, db, queue, providers }): Promise<string | void>\n- For async: enqueues a task that:\n  1. Creates execution record in DB (status: pending)\n  2. Updates to running\n  3. Gets provider from factory\n  4. Calls executeAgent with hook config + payload\n  5. Updates execution with result (success + output, or error)\n  6. Returns void\n- For sync: same flow but awaits and returns agent output\n- Logs each step with pino\n- Write test with mock db, mock provider, verify execution lifecycle",
+          "priority": 6,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/router.test.ts"
+          },
+          "acceptance": [
+            "Creates execution record before processing",
+            "Updates execution status through lifecycle (pending → running → success/error)",
+            "Calls agent with correct system prompt and payload",
+            "Async mode returns void, sync mode returns output",
+            "Errors caught and stored in execution record",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/router.ts", "src/agent.ts", "src/db.ts", "src/queue.ts"],
+            "hints": ["This is the glue layer — keep it thin", "Log with pino logger"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Application Entry Point",
+      "tasks": [
+        {
+          "id": "12",
+          "title": "Wire everything together in src/index.ts",
+          "description": "Create src/index.ts:\n- startServer() function:\n  1. Load config via loadConfig()\n  2. Initialize SQLite DB via initDb()\n  3. Create HookQueue instance\n  4. Create HTTP server with webhook handler wired to router\n  5. Start listening on configured port/host\n  6. Log startup info (port, number of hooks, providers)\n  7. Handle SIGINT/SIGTERM for graceful shutdown (drain queue, close db, close server)\n- Export startServer for use by CLI\n- Write integration-style test: start server, POST webhook, verify execution in DB",
+          "priority": 7,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/index.test.ts"
+          },
+          "acceptance": [
+            "Server starts and listens on configured port",
+            "Webhook POST creates execution in database",
+            "Graceful shutdown drains queue and closes resources",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/index.ts", "src/server.ts", "src/router.ts", "src/config.ts", "src/db.ts", "src/queue.ts"],
+            "hints": ["Keep this file thin — just wiring", "Use process.on('SIGINT') and process.on('SIGTERM')"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CLI",
+      "tasks": [
+        {
+          "id": "13",
+          "title": "Implement CLI with init and start commands",
+          "description": "Create src/cli.ts:\n- Use commander.js\n- `hooklaw init`: creates hooklaw.config.yaml with example config, .env.example, initializes SQLite DB\n- `hooklaw start`: calls startServer() from index.ts\n- `hooklaw status`: loads config, connects to db, shows hook count, server config\n- Set as bin entry in package.json: { \"hooklaw\": \"dist/cli.js\" }\n- Add shebang to cli.ts: #!/usr/bin/env node\n- Write test: init creates files, status outputs correctly",
+          "priority": 8,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/cli.test.ts"
+          },
+          "acceptance": [
+            "hooklaw init creates config file and .env.example",
+            "hooklaw start boots the server",
+            "hooklaw status shows hook count and config",
+            "bin entry in package.json points to dist/cli.js",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/cli.ts", "src/index.ts", "src/config.ts"],
+            "hints": ["Use commander.js", "Add #!/usr/bin/env node at top"]
+          }
+        },
+        {
+          "id": "14",
+          "title": "Implement CLI hook management commands",
+          "description": "Add to src/cli.ts:\n- `hooklaw hook create <name>` — adds hook entry to config YAML file, registers in DB, prints URL\n- `hooklaw hook list` — reads config, lists all hooks with status (enabled/disabled), slug, mode\n- `hooklaw hook delete <name>` — removes from config YAML and DB\n- `hooklaw hook test <name> --payload '{...}'` — sends a POST to localhost with given payload, shows result\n- `hooklaw logs <hook-name>` — queries executions from DB, shows last 20 with status, duration, timestamp\n- Write test: create adds to config, list shows hooks, logs queries DB",
+          "priority": 8,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/cli-hooks.test.ts"
+          },
+          "acceptance": [
+            "hook create adds entry to YAML config and DB",
+            "hook create prints the webhook URL",
+            "hook list shows all hooks with status",
+            "hook delete removes from config and DB",
+            "hook test sends POST and shows response",
+            "logs shows recent executions",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/cli.ts", "src/db.ts", "src/config.ts"],
+            "hints": ["Use yaml.stringify to write back to config file", "hook test can use fetch() to POST to localhost"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP Client Integration",
+      "tasks": [
+        {
+          "id": "15",
+          "title": "Implement MCP stdio client",
+          "description": "Create src/mcp-client.ts:\n- Uses @modelcontextprotocol/sdk client\n- connectStdio(config: McpServerConfig): Promise<McpConnection>\n- McpConnection: { listTools(): ToolDefinition[], callTool(name, args): Promise<string>, disconnect(): void }\n- Spawns child process with given command + args + env\n- Connects via stdio transport\n- Maps MCP tool schemas to LLMProvider ToolDefinition format\n- Add @modelcontextprotocol/sdk to package.json\n- Write test with a mock stdio MCP server (or test connection/disconnect lifecycle)",
+          "priority": 9,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/mcp-client.test.ts"
+          },
+          "acceptance": [
+            "Spawns process with correct command, args, env",
+            "Lists available tools from MCP server",
+            "Maps MCP tool schemas to ToolDefinition format",
+            "callTool sends request and returns result",
+            "disconnect kills child process",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/mcp-client.ts", "src/types.ts"],
+            "hints": ["Use @modelcontextprotocol/sdk Client and StdioClientTransport", "Map MCP inputSchema to ToolDefinition.input_schema"]
+          }
+        },
+        {
+          "id": "16",
+          "title": "Implement MCP SSE client and multi-server manager",
+          "description": "Add to src/mcp-client.ts:\n- connectSSE(config: McpServerConfig): Promise<McpConnection> — connects to remote MCP server via SSE transport\n- connectMcpServers(configs: McpServerConfig[]): Promise<McpConnectionPool>\n- McpConnectionPool: { getAllTools(): ToolDefinition[], callTool(name, args): Promise<string>, disconnectAll(): void }\n- Pool aggregates tools from all connected servers, routes callTool to correct server\n- Handle duplicate tool names across servers (prefix with server name if conflict)\n- Write test: pool aggregates tools from multiple connections",
+          "priority": 9,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/mcp-pool.test.ts"
+          },
+          "acceptance": [
+            "SSE client connects to remote MCP server",
+            "Pool aggregates tools from multiple servers",
+            "callTool routes to correct server based on tool name",
+            "disconnectAll cleans up all connections",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/mcp-client.ts"],
+            "hints": ["Use SSEClientTransport from @modelcontextprotocol/sdk", "Pool is a Map<toolName, McpConnection>"]
+          }
+        },
+        {
+          "id": "17",
+          "title": "Wire MCP tools into agent execution in router",
+          "description": "Update src/router.ts to:\n- Before calling executeAgent, connect to MCP servers configured for the hook\n- Pass MCP tools as ToolDefinition[] to agent\n- Pass onToolCall callback that routes to McpConnectionPool.callTool\n- After execution, disconnect all MCP connections\n- Handle MCP connection errors gracefully (log warning, continue without tools)\n- Support mcp_presets: if hook references a preset name, resolve from config.mcp_presets\n- Write test: webhook with MCP tools triggers tool calls through pool",
+          "priority": 10,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/router-mcp.test.ts"
+          },
+          "acceptance": [
+            "MCP servers connected before agent execution",
+            "Agent receives tools from MCP servers",
+            "Tool calls routed through MCP connection pool",
+            "MCP connections cleaned up after execution",
+            "MCP connection failure does not crash execution",
+            "Preset resolution works",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/router.ts", "src/mcp-client.ts", "src/agent.ts"],
+            "hints": ["Connect MCP → get tools → pass to agent → disconnect", "Wrap MCP connect in try/catch"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "REST API",
+      "tasks": [
+        {
+          "id": "18",
+          "title": "Implement REST API endpoints for hook management",
+          "description": "Add to src/server.ts:\n- POST /api/hooks — create hook (body: { name, mode?, agent config })\n- GET /api/hooks — list all hooks\n- GET /api/hooks/:id — get hook details\n- DELETE /api/hooks/:id — delete hook\n- PATCH /api/hooks/:id — update hook config\n- GET /api/hooks/:id/logs — get executions (query: limit, offset)\n- POST /api/hooks/:id/test — trigger test execution with provided payload\n- Auth: if config.server.auth_token set, require Authorization: Bearer <token>\n- All responses as JSON\n- Write test: CRUD operations, auth check",
+          "priority": 11,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/api.test.ts"
+          },
+          "acceptance": [
+            "All CRUD endpoints work correctly",
+            "Auth token validated when configured",
+            "Missing auth returns 401",
+            "Logs endpoint returns paginated executions",
+            "Test endpoint triggers webhook processing",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/server.ts", "src/db.ts", "src/router.ts"],
+            "hints": ["Keep using native http, add URL pattern matching", "Parse path params manually: url.split('/')"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP Presets",
+      "tasks": [
+        {
+          "id": "19",
+          "title": "Add built-in MCP preset configs for popular servers",
+          "description": "Create src/presets.ts:\n- Export DEFAULT_PRESETS: Record<string, McpPreset> with configs for:\n  - github: @modelcontextprotocol/server-github (GITHUB_TOKEN)\n  - slack: @modelcontextprotocol/server-slack (SLACK_BOT_TOKEN)\n  - notion: @modelcontextprotocol/server-notion (NOTION_API_KEY)\n  - linear: mcp-linear (LINEAR_API_KEY)\n  - filesystem: @modelcontextprotocol/server-filesystem\n  - postgres: @modelcontextprotocol/server-postgres (DATABASE_URL)\n- mergePresets(configPresets, defaultPresets): merged presets (config overrides defaults)\n- resolvePreset(name, presets): McpServerConfig — resolves a preset name to full config, validates required env vars exist\n- Write test: resolve preset, merge logic, missing env var warning",
+          "priority": 11,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/presets.test.ts"
+          },
+          "acceptance": [
+            "Default presets defined for 6+ popular MCP servers",
+            "Config presets override defaults",
+            "resolvePreset returns full McpServerConfig",
+            "Missing required env var throws descriptive error",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/presets.ts", "src/types.ts"],
+            "hints": ["Check process.env for required_env vars", "Presets are convenience — user can always configure manually"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logging and Retention",
+      "tasks": [
+        {
+          "id": "20",
+          "title": "Implement log retention cleanup and startup log purge",
+          "description": "Add to src/db.ts:\n- cleanOldExecutions(db, retentionDays): number — deletes executions older than retention, returns count deleted\n\nAdd to src/index.ts:\n- On startup, run cleanOldExecutions with configured retention_days\n- Log how many old executions were purged\n- Optionally set interval to run cleanup daily (setInterval 24h)\n\nWrite test: create old executions, run cleanup, verify deletion",
+          "priority": 12,
+          "passes": false,
+          "tests": {
+            "command": "npx vitest run src/retention.test.ts"
+          },
+          "acceptance": [
+            "Old executions deleted based on retention_days",
+            "Cleanup runs on startup",
+            "Count of purged records logged",
+            "Recent executions not affected",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/db.ts", "src/index.ts"],
+            "hints": ["Use SQLite datetime comparison: created_at < datetime('now', '-30 days')", "Default retention: 30 days"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "README and Example Config",
+      "tasks": [
+        {
+          "id": "21",
+          "title": "Write README.md and example config file",
+          "description": "Create README.md:\n- Project description and value prop (1 paragraph)\n- Quick start: install, init, configure, start (4 commands)\n- How it works: webhook → agent → MCP tools diagram\n- Config reference: server, providers, hooks, mcp_servers, mcp_presets, logs\n- CLI reference: all commands with examples\n- API reference: all endpoints\n- BYOK section: supported providers\n- MCP presets: list of built-in presets\n- Example use cases: GitHub PR review, Stripe payment notification, form submission processing\n\nCreate hooklaw.config.example.yaml:\n- Full example config with comments explaining each section\n- Two example hooks (github-pr-review, stripe-payment)\n\nCreate LICENSE (MIT)",
+          "priority": 13,
+          "passes": false,
+          "tests": {
+            "command": "test -f README.md && test -f hooklaw.config.example.yaml && test -f LICENSE"
+          },
+          "acceptance": [
+            "README has quick start, config reference, CLI reference, API reference",
+            "Example config has two working hook examples with comments",
+            "MIT LICENSE file exists",
+            "All CLI commands documented"
+          ],
+          "context": {
+            "files": ["README.md", "hooklaw.config.example.yaml", "LICENSE"],
+            "hints": ["Keep README concise and copy-paste friendly", "Example config should work if user fills in API keys"]
+          }
+        }
+      ]
+    }
+  ]
+}

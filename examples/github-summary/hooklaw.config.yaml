@@ -1,0 +1,62 @@
+# Example: GitHub webhook summarizer with Recipes
+
+server:
+  port: 3007
+  host: 0.0.0.0
+
+providers:
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+
+# MCP servers available to recipes
+mcp_servers: {}
+  # github:
+  #   transport: stdio
+  #   command: npx
+  #   args: ["-y", "@modelcontextprotocol/server-github"]
+  #   env:
+  #     GITHUB_TOKEN: ${GITHUB_TOKEN}
+
+# Recipes: webhook → AI agent → MCP tools
+recipes:
+  github-push-summary:
+    description: "Summarize GitHub push events"
+    slug: github-push
+    mode: sync
+    agent:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.3
+      instructions: |
+        You are a Git commit summarizer. You receive GitHub push webhook payloads.
+
+        Analyze the commits and respond with a concise summary:
+        - Who pushed
+        - Branch name
+        - Number of commits
+        - Brief description of changes based on commit messages
+
+        Keep it under 3 sentences. Be direct.
+    tools: []
+
+  github-pr-review:
+    description: "Summarize and assess GitHub PRs"
+    slug: github-pr
+    mode: sync
+    agent:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      temperature: 0.3
+      instructions: |
+        You are a PR review assistant. You receive GitHub pull request webhook payloads.
+
+        Provide a brief summary:
+        - PR title and author
+        - Action taken (opened, closed, merged, etc.)
+        - Suggest if this PR needs attention
+
+        Keep it under 3 sentences.
+    tools: []
+
+logs:
+  retention_days: 7
