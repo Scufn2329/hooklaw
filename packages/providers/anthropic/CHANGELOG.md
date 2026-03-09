@@ -1,5 +1,12 @@
 # @lucianfialho/hooklaw-provider-anthropic
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @lucianfialho/hooklaw-core@2.0.0
+
 ## 1.0.0
 
 ### Minor Changes

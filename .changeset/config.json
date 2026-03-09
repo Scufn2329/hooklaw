@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@lucianfialho/hooklaw-core", "@lucianfialho/hooklaw-provider-openai", "@lucianfialho/hooklaw-provider-anthropic", "@lucianfialho/hooklaw-cli", "hooklaw"]
+    ["@lucianfialho/hooklaw-core", "@lucianfialho/hooklaw-provider-openai", "@lucianfialho/hooklaw-provider-anthropic", "@lucianfialho/hooklaw-cli", "@lucianfialho/hooklaw-dashboard", "hooklaw"]
   ],
   "linked": [],
   "access": "public",
