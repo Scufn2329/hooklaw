@@ -12,6 +12,7 @@ packages/providers/*/dist/
 .env
 .env.*
 !.env.example
+hooklaw.config.yaml
 .DS_Store
 *.swp
 *~
