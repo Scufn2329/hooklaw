@@ -90,6 +90,44 @@ export function getExecutionsByRecipe(
   ).all(recipeId, limit, offset) as Execution[];
 }
 
+export function getAllExecutions(
+  db: Database.Database,
+  opts: { limit?: number; offset?: number; status?: string; slug?: string; recipeId?: string } = {}
+): { executions: Execution[]; total: number } {
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+
+  if (opts.status) { conditions.push('status = ?'); values.push(opts.status); }
+  if (opts.slug) { conditions.push('hook_id = ?'); values.push(opts.slug); }
+  if (opts.recipeId) { conditions.push('recipe_id = ?'); values.push(opts.recipeId); }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const total = (db.prepare(`SELECT COUNT(*) as count FROM executions ${where}`).get(...values) as { count: number }).count;
+  const executions = db.prepare(
+    `SELECT * FROM executions ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`
+  ).all(...values, limit, offset) as Execution[];
+
+  return { executions, total };
+}
+
+export function getExecutionStats(db: Database.Database): { total: number; success: number; error: number; running: number; pending: number } {
+  const rows = db.prepare(
+    `SELECT status, COUNT(*) as count FROM executions GROUP BY status`
+  ).all() as Array<{ status: string; count: number }>;
+
+  const stats = { total: 0, success: 0, error: 0, running: 0, pending: 0 };
+  for (const row of rows) {
+    stats.total += row.count;
+    if (row.status in stats) {
+      (stats as Record<string, number>)[row.status] = row.count;
+    }
+  }
+  return stats;
+}
+
 export function cleanOldExecutions(db: Database.Database, retentionDays: number): number {
   const result = db.prepare(
     `DELETE FROM executions WHERE created_at < datetime('now', '-' || ? || ' days')`

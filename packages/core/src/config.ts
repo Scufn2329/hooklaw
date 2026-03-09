@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parse as parseYaml } from 'yaml';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { AppConfigSchema, type AppConfig } from './types.js';
 
 const ENV_VAR_PATTERN = /\$\{([^}]+)\}/g;
@@ -81,5 +81,45 @@ export function getConfig(configPath?: string): AppConfig {
 }
 
 export function resetConfigCache(): void {
+  cachedConfig = null;
+}
+
+export interface RecipeUpdate {
+  description?: string;
+  slug?: string;
+  mode?: 'async' | 'sync';
+  instructions?: string;
+  model?: string;
+  provider?: string;
+  tools?: string[];
+}
+
+export function updateRecipeInFile(configPath: string, recipeId: string, update: RecipeUpdate): void {
+  const filePath = resolve(configPath);
+  const raw = readFileSync(filePath, 'utf-8');
+  const parsed = parseYaml(raw) as Record<string, unknown>;
+
+  const recipes = parsed.recipes as Record<string, Record<string, unknown>> | undefined;
+  if (!recipes || !recipes[recipeId]) {
+    throw new Error(`Recipe "${recipeId}" not found`);
+  }
+
+  const recipe = recipes[recipeId];
+  if (update.description !== undefined) recipe.description = update.description;
+  if (update.slug !== undefined) recipe.slug = update.slug;
+  if (update.mode !== undefined) recipe.mode = update.mode;
+  if (update.tools !== undefined) recipe.tools = update.tools;
+
+  // Agent-level fields
+  const agent = (recipe.agent ?? {}) as Record<string, unknown>;
+  if (update.instructions !== undefined) agent.instructions = update.instructions;
+  if (update.model !== undefined) agent.model = update.model;
+  if (update.provider !== undefined) agent.provider = update.provider;
+  recipe.agent = agent;
+
+  const yaml = stringifyYaml(parsed, { lineWidth: 0 });
+  writeFileSync(filePath, yaml, 'utf-8');
+
+  // Invalidate cache
   cachedConfig = null;
 }

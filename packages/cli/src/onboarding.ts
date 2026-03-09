@@ -19,10 +19,10 @@ const PROVIDERS = [
 ] as const;
 
 const DEFAULT_MODELS: Record<string, string> = {
-  anthropic: 'claude-sonnet-4-20250514',
-  openai: 'gpt-4o',
-  openrouter: 'anthropic/claude-sonnet-4-20250514',
-  ollama: 'llama3.2',
+  anthropic: 'claude-sonnet-4-6',
+  openai: 'gpt-5.4',
+  openrouter: 'openai/gpt-5.4',
+  ollama: 'llama4',
 };
 
 interface OnboardingResult {

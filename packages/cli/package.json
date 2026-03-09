@@ -27,6 +27,7 @@
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@lucianfialho/hooklaw-dashboard": "workspace:*",
     "@types/node": "^22.10.0",
     "typescript": "^5.7.0"
   }

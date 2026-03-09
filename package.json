@@ -10,7 +10,10 @@
     "build": "turbo build",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
-    "dev": "tsx packages/cli/src/cli.ts start",
+    "dev": "tsx watch packages/cli/src/cli.ts start --verbose",
+    "dev:reset": "rm -f hooklaw.db && tsx watch packages/cli/src/cli.ts start --verbose",
+    "dev:init": "tsx packages/cli/src/cli.ts init",
+    "dev:doctor": "tsx packages/cli/src/cli.ts doctor",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "turbo build && changeset publish"

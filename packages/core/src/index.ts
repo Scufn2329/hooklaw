@@ -1,8 +1,8 @@
 import { createLogger } from './logger.js';
-import { loadConfig } from './config.js';
-import { initDb, getExecutionsByHook, getExecutionsByRecipe, cleanOldExecutions } from './db.js';
+import { loadConfig, updateRecipeInFile, type RecipeUpdate } from './config.js';
+import { initDb, getExecutionsByHook, getExecutionsByRecipe, getAllExecutions, getExecutionStats, cleanOldExecutions } from './db.js';
 import { HookQueue } from './queue.js';
-import { createServer, startServer } from './server.js';
+import { createServer, startServer, getLocalIP } from './server.js';
 import { processWebhook, getRecipesForSlug } from './router.js';
 import type { AppConfig } from './types.js';
 
@@ -10,6 +10,7 @@ const logger = createLogger('hooklaw');
 
 export interface BootstrapOptions {
   configPath?: string;
+  dashboardDir?: string;
 }
 
 export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: import('node:http').Server; config: AppConfig }> {
@@ -45,7 +46,28 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
         enabled: r.enabled,
         mode: r.mode,
         tools: r.tools,
+        provider: r.agent.provider,
+        model: r.agent.model,
+        instructions: r.agent.instructions,
       }));
+    },
+    getMcpServers() {
+      return Object.entries(config.mcp_servers).map(([name, s]) => ({
+        name,
+        transport: s.transport,
+        command: s.command,
+        args: s.args,
+      }));
+    },
+    updateRecipe(recipeId: string, update: RecipeUpdate) {
+      const configPath = opts.configPath ?? 'hooklaw.config.yaml';
+      updateRecipeInFile(configPath, recipeId, update);
+      // Reload the recipe in memory
+      const fresh = loadConfig(configPath);
+      const recipe = fresh.recipes[recipeId];
+      if (recipe) {
+        config.recipes[recipeId] = recipe;
+      }
     },
     getExecutions(slug, limit, offset) {
       return getExecutionsByHook(db, slug, { limit, offset });
@@ -53,6 +75,25 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
     getRecipeExecutions(recipeId, limit, offset) {
       return getExecutionsByRecipe(db, recipeId, { limit, offset });
     },
+    getAllExecutions(queryOpts) {
+      return getAllExecutions(db, queryOpts);
+    },
+    getStats() {
+      return getExecutionStats(db);
+    },
+    getConfig() {
+      // Return config with API keys redacted
+      const redacted = JSON.parse(JSON.stringify(config));
+      if (redacted.providers) {
+        for (const p of Object.values(redacted.providers) as Record<string, unknown>[]) {
+          if (p.api_key && typeof p.api_key === 'string') {
+            p.api_key = p.api_key.slice(0, 8) + '...' + p.api_key.slice(-4);
+          }
+        }
+      }
+      return redacted;
+    },
+    dashboardDir: opts.dashboardDir,
   });
 
   const { port, host } = config.server;
@@ -60,7 +101,18 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
 
   const recipeCount = Object.keys(config.recipes).length;
   const mcpCount = Object.keys(config.mcp_servers).length;
+  const localIP = getLocalIP();
+  const localUrl = `http://localhost:${port}`;
+  const networkUrl = localIP ? `http://${localIP}:${port}` : undefined;
+
   logger.info({ recipes: recipeCount, mcpServers: mcpCount, slugs: slugMap.size }, 'HookLaw ready');
+  logger.info({ url: localUrl }, `Local:   ${localUrl}`);
+  if (networkUrl) {
+    logger.info({ url: networkUrl }, `Network: ${networkUrl}`);
+  }
+  if (opts.dashboardDir) {
+    logger.info(`Dashboard: ${networkUrl ?? localUrl}/dashboard/`);
+  }
 
   // Schedule log retention cleanup every 6 hours
   const retentionInterval = setInterval(() => {
@@ -75,8 +127,10 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
 }
 
 // Core modules
-export { loadConfig } from './config.js';
-export { createServer, startServer } from './server.js';
+export { loadConfig, updateRecipeInFile } from './config.js';
+export type { RecipeUpdate } from './config.js';
+export { createServer, startServer, getLocalIP } from './server.js';
+export { startSetupServer } from './setup.js';
 export { processWebhook } from './router.js';
 export { HookQueue } from './queue.js';
 export { initDb } from './db.js';

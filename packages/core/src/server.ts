@@ -1,5 +1,8 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join, extname } from 'node:path';
+import { networkInterfaces } from 'node:os';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('hooklaw:server');
@@ -7,9 +10,17 @@ const logger = createLogger('hooklaw:server');
 export interface ServerDeps {
   getSlugConfig: (slug: string) => { enabled: boolean; mode: string } | undefined;
   processWebhook: (slug: string, payload: unknown) => Promise<string | void>;
-  listRecipes?: () => Array<{ id: string; slug: string; description: string; enabled: boolean; mode: string; tools: string[] }>;
+  listRecipes?: () => Array<{ id: string; slug: string; description: string; enabled: boolean; mode: string; tools: string[]; provider?: string; model?: string; instructions?: string }>;
+  getMcpServers?: () => Array<{ name: string; transport: string; command?: string; args?: string[] }>;
+  updateRecipe?: (recipeId: string, update: Record<string, unknown>) => void;
   getExecutions?: (slug: string, limit: number, offset: number) => unknown[];
   getRecipeExecutions?: (recipeId: string, limit: number, offset: number) => unknown[];
+  getAllExecutions?: (opts: { limit?: number; offset?: number; status?: string; slug?: string; recipeId?: string }) => { executions: unknown[]; total: number };
+  getStats?: () => { total: number; success: number; error: number; running: number; pending: number };
+  getConfig?: () => unknown;
+  dashboardDir?: string;
+  setupMode?: boolean;
+  onSetup?: (data: unknown) => Promise<void>;
   authToken?: string;
 }
 
@@ -40,6 +51,31 @@ function parsePath(url: string): string[] {
   return url.split('?')[0].split('/').filter(Boolean);
 }
 
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
+async function serveStatic(res: ServerResponse, filePath: string): Promise<boolean> {
+  try {
+    const data = await readFile(filePath);
+    const ext = extname(filePath);
+    const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function parseQuery(url: string): Record<string, string> {
   const qIndex = url.indexOf('?');
   if (qIndex === -1) return {};
@@ -59,9 +95,35 @@ export function createServer(deps: ServerDeps): http.Server {
     const query = parseQuery(rawUrl);
 
     try {
+      // Redirect root to dashboard
+      if (method === 'GET' && segments.length === 0 && deps.dashboardDir) {
+        res.writeHead(302, { Location: '/dashboard/' });
+        res.end();
+        return;
+      }
+
       // GET /health
       if (method === 'GET' && segments[0] === 'health') {
         return sendJson(res, 200, { status: 'ok' });
+      }
+
+      // GET /api/mode — tells dashboard if we're in setup or ready mode
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'mode' && !segments[2]) {
+        return sendJson(res, 200, { mode: deps.setupMode ? 'setup' : 'ready' });
+      }
+
+      // POST /api/setup — save initial config (setup mode only)
+      if (method === 'POST' && segments[0] === 'api' && segments[1] === 'setup' && !segments[2]) {
+        if (!deps.setupMode || !deps.onSetup) {
+          return sendJson(res, 400, { error: 'Not in setup mode' });
+        }
+        const body = await parseBody(req);
+        try {
+          await deps.onSetup(body);
+          return sendJson(res, 200, { status: 'ok' });
+        } catch (err) {
+          return sendJson(res, 500, { error: err instanceof Error ? err.message : 'Setup failed' });
+        }
       }
 
       // POST /h/:slug — webhook receiver
@@ -96,6 +158,20 @@ export function createServer(deps: ServerDeps): http.Server {
         return sendJson(res, 200, { recipes: [] });
       }
 
+      // PATCH /api/recipes/:id — update a recipe
+      if (method === 'PATCH' && segments[0] === 'api' && segments[1] === 'recipes' && segments[2] && !segments[3]) {
+        if (deps.updateRecipe) {
+          try {
+            const body = await parseBody(req) as Record<string, unknown>;
+            deps.updateRecipe(segments[2], body);
+            return sendJson(res, 200, { status: 'ok' });
+          } catch (err) {
+            return sendJson(res, 400, { error: err instanceof Error ? err.message : 'Update failed' });
+          }
+        }
+        return sendJson(res, 501, { error: 'Recipe updates not supported' });
+      }
+
       // GET /api/recipes/:id/executions — executions for a recipe
       if (method === 'GET' && segments[0] === 'api' && segments[1] === 'recipes' && segments[2] && segments[3] === 'executions') {
         if (deps.getRecipeExecutions) {
@@ -118,6 +194,70 @@ export function createServer(deps: ServerDeps): http.Server {
         return sendJson(res, 200, { executions: [] });
       }
 
+      // GET /api/stats — execution stats for dashboard
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'stats' && !segments[2]) {
+        if (deps.getStats) {
+          const dbStats = deps.getStats();
+          const recipes = deps.listRecipes?.() ?? [];
+          const activeRecipes = recipes.filter((r) => r.enabled).length;
+          const uniqueSlugs = new Set(recipes.filter((r) => r.enabled).map((r) => r.slug)).size;
+          return sendJson(res, 200, {
+            totalExecutions: dbStats.total,
+            successCount: dbStats.success,
+            errorCount: dbStats.error,
+            activeRecipes,
+            uniqueSlugs,
+          });
+        }
+        return sendJson(res, 200, { totalExecutions: 0, successCount: 0, errorCount: 0, activeRecipes: 0, uniqueSlugs: 0 });
+      }
+
+      // GET /api/executions — all executions with filters
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'executions' && !segments[2]) {
+        if (deps.getAllExecutions) {
+          const limit = Math.min(parseInt(query.limit ?? '20', 10) || 20, 100);
+          const offset = parseInt(query.offset ?? '0', 10) || 0;
+          const result = deps.getAllExecutions({
+            limit,
+            offset,
+            status: query.status || undefined,
+            slug: query.slug || undefined,
+            recipeId: query.recipeId || undefined,
+          });
+          return sendJson(res, 200, result);
+        }
+        return sendJson(res, 200, { executions: [], total: 0 });
+      }
+
+      // GET /api/config — redacted config
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'config' && !segments[2]) {
+        if (deps.getConfig) {
+          return sendJson(res, 200, deps.getConfig());
+        }
+        return sendJson(res, 200, {});
+      }
+
+      // GET /api/mcp-servers — list MCP servers
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'mcp-servers' && !segments[2]) {
+        if (deps.getMcpServers) {
+          return sendJson(res, 200, { servers: deps.getMcpServers() });
+        }
+        return sendJson(res, 200, { servers: [] });
+      }
+
+      // Dashboard static files — /dashboard/*
+      if (segments[0] === 'dashboard' && deps.dashboardDir) {
+        const subPath = segments.slice(1).join('/') || 'index.html';
+        const filePath = join(deps.dashboardDir, subPath);
+
+        const served = await serveStatic(res, filePath);
+        if (served) return;
+
+        // SPA fallback: serve index.html for non-file routes
+        const indexServed = await serveStatic(res, join(deps.dashboardDir, 'index.html'));
+        if (indexServed) return;
+      }
+
       sendJson(res, 404, { error: 'Not found' });
     } catch (err) {
       logger.error({ err }, 'Request error');
@@ -130,6 +270,19 @@ export function createServer(deps: ServerDeps): http.Server {
   });
 
   return server;
+}
+
+export function getLocalIP(): string | undefined {
+  const nets = networkInterfaces();
+  for (const ifaces of Object.values(nets)) {
+    if (!ifaces) continue;
+    for (const iface of ifaces) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return undefined;
 }
 
 export function startServer(server: http.Server, port: number, host: string): Promise<void> {
