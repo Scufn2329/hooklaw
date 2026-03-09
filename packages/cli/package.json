@@ -19,10 +19,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@clack/prompts": "^1.1.0",
     "@lucianfialho/hooklaw-core": "workspace:*",
-    "@lucianfialho/hooklaw-provider-openai": "workspace:*",
     "@lucianfialho/hooklaw-provider-anthropic": "workspace:*",
-    "commander": "^13.1.0"
+    "@lucianfialho/hooklaw-provider-openai": "workspace:*",
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
