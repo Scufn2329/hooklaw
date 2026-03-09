@@ -1,4 +1,4 @@
-# @hooklaw/provider-openai
+# @lucianfialho/hooklaw-provider-openai
 
 ## 1.0.0
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @hooklaw/core@1.0.0
+  - @lucianfialho/hooklaw-core@1.0.0

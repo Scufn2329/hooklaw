@@ -19,7 +19,7 @@ export function createProvider(name: string, config: ProviderConfig): LLMProvide
     const registered = Array.from(registry.keys());
     const hint = registered.length > 0
       ? `Registered: ${registered.join(', ')}`
-      : 'No providers registered. Did you forget to import @hooklaw/provider-openai or @hooklaw/provider-anthropic?';
+      : 'No providers registered. Did you forget to import @lucianfialho/hooklaw-provider-openai or @lucianfialho/hooklaw-provider-anthropic?';
     throw new Error(`Unknown provider: '${name}'. ${hint}`);
   }
 

@@ -32,13 +32,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@hooklaw/core':
+      '@lucianfialho/hooklaw-core':
         specifier: workspace:*
         version: link:../core
-      '@hooklaw/provider-anthropic':
+      '@lucianfialho/hooklaw-provider-anthropic':
         specifier: workspace:*
         version: link:../providers/anthropic
-      '@hooklaw/provider-openai':
+      '@lucianfialho/hooklaw-provider-openai':
         specifier: workspace:*
         version: link:../providers/openai
       commander:
@@ -88,16 +88,16 @@ importers:
 
   packages/hooklaw:
     dependencies:
-      '@hooklaw/cli':
+      '@lucianfialho/hooklaw-cli':
         specifier: workspace:*
         version: link:../cli
-      '@hooklaw/core':
+      '@lucianfialho/hooklaw-core':
         specifier: workspace:*
         version: link:../core
-      '@hooklaw/provider-anthropic':
+      '@lucianfialho/hooklaw-provider-anthropic':
         specifier: workspace:*
         version: link:../providers/anthropic
-      '@hooklaw/provider-openai':
+      '@lucianfialho/hooklaw-provider-openai':
         specifier: workspace:*
         version: link:../providers/openai
     devDependencies:
@@ -114,7 +114,7 @@ importers:
         specifier: ^0.39.0
         version: 0.39.0
     devDependencies:
-      '@hooklaw/core':
+      '@lucianfialho/hooklaw-core':
         specifier: workspace:*
         version: link:../../core
       '@types/node':
@@ -130,7 +130,7 @@ importers:
         specifier: ^4.85.0
         version: 4.104.0(zod@3.25.76)
     devDependencies:
-      '@hooklaw/core':
+      '@lucianfialho/hooklaw-core':
         specifier: workspace:*
         version: link:../../core
       '@types/node':

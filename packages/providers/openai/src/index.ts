@@ -1,4 +1,4 @@
-import { registerProvider } from '@hooklaw/core';
+import { registerProvider } from '@lucianfialho/hooklaw-core';
 import { OpenAIProvider } from './openai.js';
 
 registerProvider('openai', (config) => {

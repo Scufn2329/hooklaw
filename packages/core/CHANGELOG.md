@@ -1,4 +1,4 @@
-# @hooklaw/core
+# @lucianfialho/hooklaw-core
 
 ## 1.0.0
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 // Side-effect imports: register all built-in providers
-import '@hooklaw/provider-openai';
-import '@hooklaw/provider-anthropic';
+import '@lucianfialho/hooklaw-provider-openai';
+import '@lucianfialho/hooklaw-provider-anthropic';
 
 import { Command } from 'commander';
 
@@ -23,7 +23,7 @@ program
       if (opts.verbose) {
         process.env.LOG_LEVEL = 'debug';
       }
-      const { bootstrap } = await import('@hooklaw/core');
+      const { bootstrap } = await import('@lucianfialho/hooklaw-core');
       await bootstrap({ configPath: opts.config });
     } catch (err) {
       console.error('Failed to start HookLaw:', err instanceof Error ? err.message : err);

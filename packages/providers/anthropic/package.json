@@ -1,5 +1,5 @@
 {
-  "name": "@hooklaw/provider-anthropic",
+  "name": "@lucianfialho/hooklaw-provider-anthropic",
   "version": "1.0.0",
   "description": "Anthropic provider for HookLaw",
   "type": "module",
@@ -26,10 +26,10 @@
     "@anthropic-ai/sdk": "^0.39.0"
   },
   "peerDependencies": {
-    "@hooklaw/core": "workspace:*"
+    "@lucianfialho/hooklaw-core": "workspace:*"
   },
   "devDependencies": {
-    "@hooklaw/core": "workspace:*",
+    "@lucianfialho/hooklaw-core": "workspace:*",
     "@types/node": "^22.10.0",
     "typescript": "^5.7.0"
   }

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { LLMProvider, Message, ChatOptions, ChatResult, ToolDefinition, ToolCall } from '@hooklaw/core';
+import type { LLMProvider, Message, ChatOptions, ChatResult, ToolDefinition, ToolCall } from '@lucianfialho/hooklaw-core';
 import type { ResponseInputItem, FunctionTool, Response as OAIResponse } from 'openai/resources/responses/responses.js';
 
 export class OpenAIProvider implements LLMProvider {

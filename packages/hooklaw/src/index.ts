@@ -1,1 +1,1 @@
-export * from '@hooklaw/core';
+export * from '@lucianfialho/hooklaw-core';

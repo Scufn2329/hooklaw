@@ -1,4 +1,4 @@
-# @hooklaw/provider-anthropic
+# @lucianfialho/hooklaw-provider-anthropic
 
 ## 1.0.0
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @hooklaw/core@1.0.0
+  - @lucianfialho/hooklaw-core@1.0.0

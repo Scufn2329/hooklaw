@@ -1,4 +1,4 @@
-# @hooklaw/cli
+# @lucianfialho/hooklaw-cli
 
 ## 1.0.0
 
@@ -9,6 +9,6 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @hooklaw/core@1.0.0
-  - @hooklaw/provider-openai@1.0.0
-  - @hooklaw/provider-anthropic@1.0.0
+  - @lucianfialho/hooklaw-core@1.0.0
+  - @lucianfialho/hooklaw-provider-openai@1.0.0
+  - @lucianfialho/hooklaw-provider-anthropic@1.0.0

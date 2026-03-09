@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "hooklaw": "./node_modules/@hooklaw/cli/dist/cli.js"
+    "hooklaw": "./node_modules/@lucianfialho/hooklaw-cli/dist/cli.js"
   },
   "scripts": {
     "build": "tsc -b"
@@ -37,10 +37,10 @@
     "url": "https://github.com/hooklaw/hooklaw.git"
   },
   "dependencies": {
-    "@hooklaw/core": "workspace:*",
-    "@hooklaw/cli": "workspace:*",
-    "@hooklaw/provider-openai": "workspace:*",
-    "@hooklaw/provider-anthropic": "workspace:*"
+    "@lucianfialho/hooklaw-core": "workspace:*",
+    "@lucianfialho/hooklaw-cli": "workspace:*",
+    "@lucianfialho/hooklaw-provider-openai": "workspace:*",
+    "@lucianfialho/hooklaw-provider-anthropic": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

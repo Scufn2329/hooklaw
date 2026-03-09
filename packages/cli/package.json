@@ -1,5 +1,5 @@
 {
-  "name": "@hooklaw/cli",
+  "name": "@lucianfialho/hooklaw-cli",
   "version": "1.0.0",
   "description": "CLI for HookLaw — webhook orchestrator with AI agents and MCP tools",
   "type": "module",
@@ -19,9 +19,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@hooklaw/core": "workspace:*",
-    "@hooklaw/provider-openai": "workspace:*",
-    "@hooklaw/provider-anthropic": "workspace:*",
+    "@lucianfialho/hooklaw-core": "workspace:*",
+    "@lucianfialho/hooklaw-provider-openai": "workspace:*",
+    "@lucianfialho/hooklaw-provider-anthropic": "workspace:*",
     "commander": "^13.1.0"
   },
   "devDependencies": {
