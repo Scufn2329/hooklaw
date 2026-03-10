@@ -184,10 +184,13 @@ const USE_CASES: UseCase[] = [
   },
 ];
 
+type HookType = 'webhook' | 'rss';
+
 interface SetupData {
   provider: string;
   apiKey: string;
   model: string;
+  hookType: HookType;
   useCase: string;
   slug: string;
   description: string;
@@ -196,6 +199,8 @@ interface SetupData {
   port: number;
   mcp?: { name: string; config: McpConfig };
   tools: string[];
+  feedUrl: string;
+  feedRefresh: number;
 }
 
 export function Setup() {
@@ -204,6 +209,7 @@ export function Setup() {
     provider: '',
     apiKey: '',
     model: '',
+    hookType: 'webhook',
     useCase: '',
     slug: 'my-webhook',
     description: '',
@@ -211,6 +217,8 @@ export function Setup() {
     mode: 'sync',
     port: 3007,
     tools: [],
+    feedUrl: '',
+    feedRefresh: 300000,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -261,15 +269,28 @@ export function Setup() {
               <span className="text-zinc-200 font-mono text-xs">{data.model}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-zinc-500">Source</span>
+              <span className="text-zinc-200">{data.hookType === 'rss' ? 'RSS Feed' : 'Webhook'}</span>
+            </div>
+            {data.hookType === 'webhook' && (
+            <div className="flex justify-between">
               <span className="text-zinc-500">Webhook</span>
               <span className="text-emerald-400 font-mono text-xs">POST /h/{data.slug}</span>
             </div>
+            )}
+            {data.hookType === 'rss' && (
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Feed</span>
+              <span className="text-emerald-400 font-mono text-xs truncate ml-4">{data.feedUrl}</span>
+            </div>
+            )}
             <div className="flex justify-between">
               <span className="text-zinc-500">Mode</span>
               <span className="text-zinc-200">{data.mode}</span>
             </div>
           </div>
 
+          {data.hookType === 'webhook' ? (
           <div className="space-y-3">
             <p className="text-zinc-500 text-sm">Test it with:</p>
             <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs text-emerald-400 text-left overflow-x-auto">
@@ -278,6 +299,15 @@ export function Setup() {
   -d '{"event": "test", "message": "Hello!"}'`}
             </pre>
           </div>
+          ) : (
+          <div className="space-y-2">
+            <p className="text-zinc-500 text-sm">Your feed is being monitored. New items will be processed automatically.</p>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-400">
+              <span className="text-zinc-600">Polling:</span> {data.feedUrl}<br/>
+              <span className="text-zinc-600">Every:</span> {Math.round(data.feedRefresh / 60000)} min
+            </div>
+          </div>
+          )}
 
           <button
             onClick={() => window.location.href = '/dashboard/'}
@@ -291,7 +321,7 @@ export function Setup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-start justify-center p-4 pt-12 pb-12 overflow-y-auto">
       <div className="max-w-lg w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
@@ -302,7 +332,7 @@ export function Setup() {
 
         {/* Progress */}
         <div className="flex items-center gap-2 justify-center">
-          {['Provider', 'Recipe', 'Review'].map((label, i) => (
+          {['Provider', 'Source & Recipe', 'Review'].map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                 i < step ? 'bg-emerald-600 text-white' :
@@ -331,6 +361,7 @@ export function Setup() {
                 {PROVIDERS.map((p) => (
                   <button
                     key={p.value}
+                    data-testid={`provider-${p.value}`}
                     onClick={() => {
                       updateData({ provider: p.value, model: DEFAULT_MODELS[p.value] });
                     }}
@@ -375,6 +406,7 @@ export function Setup() {
 
               <div className="flex justify-end pt-2">
                 <button
+                  data-testid="continue-provider"
                   onClick={() => setStep(1)}
                   disabled={!data.provider || (needsKey && !data.apiKey)}
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
@@ -389,8 +421,102 @@ export function Setup() {
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-100">What should happen when a webhook arrives?</h2>
-                <p className="text-sm text-zinc-500 mt-1">Pick a use case — you can customize everything after.</p>
+                <h2 className="text-lg font-semibold text-zinc-100">How should events arrive?</h2>
+                <p className="text-sm text-zinc-500 mt-1">Choose your event source, then pick a use case.</p>
+              </div>
+
+              {/* Hook type selector */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => updateData({ hookType: 'webhook' })}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                    data.hookType === 'webhook'
+                      ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/50'
+                      : 'border-zinc-700/50 hover:border-zinc-600 bg-zinc-800/30'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    data.hookType === 'webhook' ? 'bg-blue-500/15' : 'bg-zinc-800'
+                  }`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={data.hookType === 'webhook' ? 'text-blue-400' : 'text-zinc-400'}>
+                      <path d="M18 16.98h1a2 2 0 002-2v-1a2 2 0 00-2-2h-1M6 16.98H5a2 2 0 01-2-2v-1a2 2 0 012-2h1"/>
+                      <path d="M12 2v4M12 18v4M8 6l8 12M16 6L8 18"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${data.hookType === 'webhook' ? 'text-blue-400' : 'text-zinc-200'}`}>Webhook</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Receive HTTP POST events</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => updateData({ hookType: 'rss' })}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                    data.hookType === 'rss'
+                      ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/50'
+                      : 'border-zinc-700/50 hover:border-zinc-600 bg-zinc-800/30'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    data.hookType === 'rss' ? 'bg-amber-500/15' : 'bg-zinc-800'
+                  }`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={data.hookType === 'rss' ? 'text-amber-400' : 'text-zinc-400'}>
+                      <path d="M4 11a9 9 0 019 9"/><path d="M4 4a16 16 0 0116 16"/><circle cx="5" cy="19" r="1"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${data.hookType === 'rss' ? 'text-amber-400' : 'text-zinc-200'}`}>RSS Feed</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Poll RSS/Atom feeds</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* RSS config fields */}
+              {data.hookType === 'rss' && (
+                <div className="space-y-3 border-t border-zinc-800 pt-3">
+                  <div>
+                    <label className="text-sm text-zinc-300 block mb-1">Feed URL</label>
+                    <input
+                      value={data.feedUrl}
+                      onChange={(e) => updateData({ feedUrl: e.target.value })}
+                      placeholder="https://example.com/feed.xml"
+                      className="w-full bg-zinc-950 border border-zinc-700 text-zinc-300 font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm text-zinc-300 block mb-1">Poll interval</label>
+                      <select
+                        value={data.feedRefresh}
+                        onChange={(e) => updateData({ feedRefresh: Number(e.target.value) })}
+                        className="w-full bg-zinc-950 border border-zinc-700 text-zinc-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                      >
+                        <option value={60000}>1 min</option>
+                        <option value={300000}>5 min</option>
+                        <option value={600000}>10 min</option>
+                        <option value={1800000}>30 min</option>
+                        <option value={3600000}>1 hour</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm text-zinc-300 block mb-1">Route slug</label>
+                      <input
+                        value={data.slug}
+                        onChange={(e) => updateData({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                        placeholder="my-feed"
+                        className="w-full bg-zinc-950 border border-zinc-700 text-zinc-300 font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                      />
+                      <p className="text-xs text-zinc-600 mt-1">Feed items route to recipes matching this slug.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-sm font-medium text-zinc-200 mb-2">
+                  {data.hookType === 'rss' ? 'What should happen when a new item arrives?' : 'What should happen when a webhook arrives?'}
+                </h3>
+                <p className="text-xs text-zinc-500 mb-3">Pick a use case — you can customize everything after.</p>
               </div>
 
               {/* MCP Integrations — app icon grid */}
@@ -400,6 +526,7 @@ export function Setup() {
                   {USE_CASES.filter(uc => uc.category === 'mcp').map((uc) => (
                     <button
                       key={uc.id}
+                      data-testid={`usecase-${uc.id}`}
                       onClick={() => {
                         updateData({
                           useCase: uc.id,
@@ -484,7 +611,8 @@ export function Setup() {
                     />
                   </div>
 
-                  {/* Webhook slug */}
+                  {/* Webhook slug (only for webhook type — RSS has slug above) */}
+                  {data.hookType === 'webhook' && (
                   <div>
                     <label className="text-sm text-zinc-300 block mb-1">Webhook URL</label>
                     <div className="flex items-center gap-0">
@@ -496,6 +624,7 @@ export function Setup() {
                       />
                     </div>
                   </div>
+                  )}
 
                   {/* Model */}
                   <div>
@@ -568,8 +697,9 @@ export function Setup() {
                   ← Back
                 </button>
                 <button
+                  data-testid="continue-recipe"
                   onClick={() => setStep(2)}
-                  disabled={!data.useCase || !data.slug}
+                  disabled={!data.useCase || !data.slug || (data.hookType === 'rss' && !data.feedUrl)}
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
                 >
                   Continue
@@ -590,7 +720,17 @@ export function Setup() {
                 <Row label="Provider" value={PROVIDERS.find(p => p.value === data.provider)?.label ?? data.provider} />
                 <Row label="Model" value={data.model} mono />
                 <Row label="API Key" value={needsKey ? (data.apiKey ? '••••••' + data.apiKey.slice(-4) : 'Not set') : 'Not needed'} />
-                <Row label="Webhook" value={`POST /h/${data.slug}`} mono highlight />
+                <Row label="Source" value={data.hookType === 'rss' ? 'RSS Feed' : 'Webhook'} />
+                {data.hookType === 'webhook' && (
+                  <Row label="Webhook" value={`POST /h/${data.slug}`} mono highlight />
+                )}
+                {data.hookType === 'rss' && (
+                  <>
+                    <Row label="Feed URL" value={data.feedUrl} mono />
+                    <Row label="Poll interval" value={`${Math.round(data.feedRefresh / 60000)} min`} />
+                    <Row label="Route slug" value={data.slug} mono />
+                  </>
+                )}
                 <Row label="Use case" value={USE_CASES.find(u => u.id === data.useCase)?.label ?? data.useCase} />
                 {data.mcp && <Row label="MCP Server" value={data.mcp.name} mono />}
                 {data.tools.length > 0 && <Row label="Tools" value={data.tools.join(', ')} mono />}
@@ -618,6 +758,7 @@ export function Setup() {
                   ← Back
                 </button>
                 <button
+                  data-testid="launch"
                   onClick={handleFinish}
                   disabled={saving}
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"

@@ -75,6 +75,8 @@ export const api = {
   checkAllMcpHealth: () => fetchApi<{ servers: McpHealthResult[] }>('/mcp-servers/health'),
   checkMcpHealth: (name: string) => fetchApi<McpHealthResult>(`/mcp-servers/${name}/check`, { method: 'POST' }),
   installMcpPackage: (name: string) => fetchApi<{ success: boolean; output: string }>(`/mcp-servers/${name}/install`, { method: 'POST' }),
+  addMcpServer: (data: { name: string; transport: string; command?: string; args?: string[]; env?: Record<string, string>; url?: string }) =>
+    fetchApi<{ status: string }>('/mcp-servers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
   getHealth: () => fetch('/health').then(r => { if (!r.ok) throw new Error('offline'); return r.json(); }) as Promise<{ status: string }>,
   sendWebhook: (slug: string, payload: unknown) =>
     fetch(`/h/${slug}`, {

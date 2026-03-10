@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { to: 'recipes', label: 'Recipes', icon: RecipeIcon },
   { to: 'executions', label: 'Executions', icon: ExecutionIcon },
   { to: 'webhooks', label: 'Webhooks', icon: WebhookIcon },
+  { to: 'mcp', label: 'MCP Servers', icon: McpIcon },
   { to: 'config', label: 'Config', icon: ConfigIcon },
 ];
 
@@ -143,6 +144,16 @@ function WebhookIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  );
+}
+
+function McpIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <path d="M6 10h.01M10 10h.01M14 10h.01" />
+      <path d="M6 14h12" />
     </svg>
   );
 }

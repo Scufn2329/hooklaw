@@ -64,6 +64,18 @@ export const LogsConfigSchema = z.object({
 
 export type LogsConfig = z.infer<typeof LogsConfigSchema>;
 
+// ── Feed Config (RSS/Atom/JSON Feed source) ─────────────────
+
+export const FeedSourceConfigSchema = z.object({
+  url: z.string(),
+  slug: z.string(),
+  refresh: z.number().int().positive().default(300_000), // 5 min default
+  skip_initial: z.boolean().default(true),
+  enabled: z.boolean().default(true),
+});
+
+export type FeedSourceConfig = z.infer<typeof FeedSourceConfigSchema>;
+
 // ── App Config (root) ────────────────────────────────────────
 
 export const AppConfigSchema = z.object({
@@ -71,6 +83,7 @@ export const AppConfigSchema = z.object({
   providers: z.record(ProviderConfigSchema).default({}),
   mcp_servers: z.record(McpServerConfigSchema).default({}),
   recipes: z.record(RecipeConfigSchema).default({}),
+  feeds: z.record(FeedSourceConfigSchema).default({}),
   logs: LogsConfigSchema.default({}),
 });
 

@@ -94,6 +94,132 @@ export interface RecipeUpdate {
   tools?: string[];
 }
 
+export interface NewRecipe {
+  id: string;
+  description: string;
+  slug: string;
+  mode: 'async' | 'sync';
+  provider: string;
+  model: string;
+  instructions: string;
+  tools: string[];
+  mcp?: { name: string; config: { command: string; args: string[] } };
+  feed?: { url: string; refresh: number; skip_initial: boolean };
+}
+
+export function addRecipeToFile(configPath: string, recipe: NewRecipe): void {
+  const filePath = resolve(configPath);
+  let parsed: Record<string, unknown>;
+
+  if (existsSync(filePath)) {
+    const raw = readFileSync(filePath, 'utf-8');
+    parsed = parseYaml(raw) as Record<string, unknown>;
+  } else {
+    parsed = {};
+  }
+
+  // Ensure recipes section
+  if (!parsed.recipes || typeof parsed.recipes !== 'object') {
+    parsed.recipes = {};
+  }
+  const recipes = parsed.recipes as Record<string, unknown>;
+
+  if (recipes[recipe.id]) {
+    throw new Error(`Recipe "${recipe.id}" already exists`);
+  }
+
+  recipes[recipe.id] = {
+    description: recipe.description,
+    enabled: true,
+    slug: recipe.slug,
+    mode: recipe.mode,
+    agent: {
+      provider: recipe.provider,
+      model: recipe.model,
+      instructions: recipe.instructions,
+    },
+    tools: recipe.tools,
+  };
+
+  // Add MCP server if provided
+  if (recipe.mcp) {
+    if (!parsed.mcp_servers || typeof parsed.mcp_servers !== 'object') {
+      parsed.mcp_servers = {};
+    }
+    const mcpServers = parsed.mcp_servers as Record<string, unknown>;
+    if (!mcpServers[recipe.mcp.name]) {
+      mcpServers[recipe.mcp.name] = {
+        transport: 'stdio',
+        command: recipe.mcp.config.command,
+        args: recipe.mcp.config.args,
+      };
+    }
+  }
+
+  // Add feed source if provided
+  if (recipe.feed) {
+    if (!parsed.feeds || typeof parsed.feeds !== 'object') {
+      parsed.feeds = {};
+    }
+    const feeds = parsed.feeds as Record<string, unknown>;
+    feeds[recipe.id] = {
+      url: recipe.feed.url,
+      slug: recipe.slug,
+      refresh: recipe.feed.refresh,
+      skip_initial: recipe.feed.skip_initial,
+      enabled: true,
+    };
+  }
+
+  const yaml = stringifyYaml(parsed, { lineWidth: 0 });
+  writeFileSync(filePath, yaml, 'utf-8');
+
+  cachedConfig = null;
+}
+
+export interface NewMcpServer {
+  name: string;
+  transport: 'stdio' | 'sse';
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+}
+
+export function addMcpServerToFile(configPath: string, server: NewMcpServer): void {
+  const filePath = resolve(configPath);
+  let parsed: Record<string, unknown>;
+
+  if (existsSync(filePath)) {
+    const raw = readFileSync(filePath, 'utf-8');
+    parsed = parseYaml(raw) as Record<string, unknown>;
+  } else {
+    parsed = {};
+  }
+
+  if (!parsed.mcp_servers || typeof parsed.mcp_servers !== 'object') {
+    parsed.mcp_servers = {};
+  }
+  const mcpServers = parsed.mcp_servers as Record<string, unknown>;
+
+  if (mcpServers[server.name]) {
+    throw new Error(`MCP server "${server.name}" already exists`);
+  }
+
+  const entry: Record<string, unknown> = { transport: server.transport };
+  if (server.command) entry.command = server.command;
+  if (server.args?.length) entry.args = server.args;
+  if (server.env && Object.keys(server.env).length > 0) entry.env = server.env;
+  if (server.url) entry.url = server.url;
+
+  mcpServers[server.name] = entry;
+
+  const yaml = stringifyYaml(parsed, { lineWidth: 0 });
+  writeFileSync(filePath, yaml, 'utf-8');
+
+  cachedConfig = null;
+}
+
 export function updateRecipeInFile(configPath: string, recipeId: string, update: RecipeUpdate): void {
   const filePath = resolve(configPath);
   const raw = readFileSync(filePath, 'utf-8');

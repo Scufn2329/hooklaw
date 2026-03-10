@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, type Recipe } from '../api/client.ts';
 import { DataTable, PageHeader, Badge, type Column } from '../components/DataTable.tsx';
 
@@ -77,6 +78,7 @@ const columns: Column<Recipe>[] = [
 ];
 
 export function Recipes() {
+  const navigate = useNavigate();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +91,15 @@ export function Recipes() {
 
   return (
     <div>
-      <PageHeader title="Recipes" description="Webhook → AI agent → MCP tool pipelines" />
+      <PageHeader title="Recipes" description="Webhook → AI agent → MCP tool pipelines">
+        <button
+          onClick={() => navigate('new')}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Add Hook
+        </button>
+      </PageHeader>
       <DataTable
         columns={columns}
         data={recipes}

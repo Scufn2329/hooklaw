@@ -1,10 +1,11 @@
 import { createLogger } from './logger.js';
-import { loadConfig, updateRecipeInFile, type RecipeUpdate } from './config.js';
+import { loadConfig, updateRecipeInFile, addRecipeToFile, addMcpServerToFile, type RecipeUpdate, type NewRecipe, type NewMcpServer } from './config.js';
 import { initDb, getExecutionsByHook, getExecutionsByRecipe, getAllExecutions, getExecutionStats, cleanOldExecutions } from './db.js';
 import { HookQueue } from './queue.js';
 import { createServer, startServer, getLocalIP } from './server.js';
 import { processWebhook, getRecipesForSlug } from './router.js';
 import { checkMcpHealth, installMcpPackage, extractPackageName } from './mcp.js';
+import { startFeeds } from './feeds.js';
 import type { AppConfig } from './types.js';
 
 const logger = createLogger('hooklaw');
@@ -35,6 +36,8 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
       slugMap.set(recipe.slug, { enabled: true, mode: recipe.mode });
     }
   }
+
+  let feedManager: ReturnType<typeof startFeeds> | null = null;
 
   const server = createServer({
     getSlugConfig(slug) {
@@ -109,12 +112,44 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
     updateRecipe(recipeId: string, update: RecipeUpdate) {
       const configPath = opts.configPath ?? 'hooklaw.config.yaml';
       updateRecipeInFile(configPath, recipeId, update);
-      // Reload the recipe in memory
       const fresh = loadConfig(configPath);
       const recipe = fresh.recipes[recipeId];
       if (recipe) {
         config.recipes[recipeId] = recipe;
       }
+    },
+    addRecipe(data: unknown) {
+      const recipe = data as NewRecipe;
+      const configPath = opts.configPath ?? 'hooklaw.config.yaml';
+      addRecipeToFile(configPath, recipe);
+      // Reload config to pick up new recipe + feed + mcp
+      const fresh = loadConfig(configPath);
+      config.recipes = fresh.recipes;
+      config.mcp_servers = fresh.mcp_servers;
+      config.feeds = fresh.feeds;
+      // Update slug map
+      const r = fresh.recipes[recipe.id];
+      if (r?.enabled) {
+        slugMap.set(r.slug, { enabled: true, mode: r.mode });
+      }
+      // Start feed poller if added
+      if (recipe.feed && fresh.feeds[recipe.id]) {
+        if (!feedManager) {
+          feedManager = startFeeds({ [recipe.id]: fresh.feeds[recipe.id] }, {
+            processWebhook(slug, payload) {
+              return processWebhook(slug, payload, deps);
+            },
+          });
+        }
+        // Note: for hot-reload of individual feeds, a restart is needed
+      }
+    },
+    addMcpServer(data: unknown) {
+      const server = data as NewMcpServer;
+      const configPath = opts.configPath ?? 'hooklaw.config.yaml';
+      addMcpServerToFile(configPath, server);
+      const fresh = loadConfig(configPath);
+      config.mcp_servers = fresh.mcp_servers;
     },
     getExecutions(slug, limit, offset) {
       return getExecutionsByHook(db, slug, { limit, offset });
@@ -140,19 +175,35 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
       }
       return redacted;
     },
+    listFeeds() {
+      return feedManager?.getStatus() ?? [];
+    },
     dashboardDir: opts.dashboardDir,
   });
 
   const { port, host } = config.server;
   await startServer(server, port, host);
 
+  // Start RSS/Atom/JSON Feed watchers
+  if (Object.keys(config.feeds).length > 0) {
+    feedManager = startFeeds(config.feeds, {
+      processWebhook(slug, payload) {
+        return processWebhook(slug, payload, deps);
+      },
+    });
+  }
+
   const recipeCount = Object.keys(config.recipes).length;
   const mcpCount = Object.keys(config.mcp_servers).length;
+  const feedCount = Object.keys(config.feeds).length;
   const localIP = getLocalIP();
   const localUrl = `http://localhost:${port}`;
   const networkUrl = localIP ? `http://${localIP}:${port}` : undefined;
 
-  logger.info({ recipes: recipeCount, mcpServers: mcpCount, slugs: slugMap.size }, 'HookLaw ready');
+  if (feedCount > 0) {
+    logger.info({ feeds: feedCount }, `${feedCount} feed source(s) active`);
+  }
+  logger.info({ recipes: recipeCount, mcpServers: mcpCount, feeds: feedCount, slugs: slugMap.size }, 'HookLaw ready');
   logger.info({ url: localUrl }, `Local:   ${localUrl}`);
   if (networkUrl) {
     logger.info({ url: networkUrl }, `Network: ${networkUrl}`);
@@ -174,8 +225,8 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<{ server: 
 }
 
 // Core modules
-export { loadConfig, updateRecipeInFile } from './config.js';
-export type { RecipeUpdate } from './config.js';
+export { loadConfig, updateRecipeInFile, addRecipeToFile, addMcpServerToFile } from './config.js';
+export type { RecipeUpdate, NewRecipe, NewMcpServer } from './config.js';
 export { createServer, startServer, getLocalIP } from './server.js';
 export { startSetupServer } from './setup.js';
 export { processWebhook } from './router.js';
@@ -191,6 +242,10 @@ export { registerProvider, createProvider, clearProviderCache, clearProviderRegi
 export type { ProviderFactory } from './providers/index.js';
 export type { LLMProvider, Message, ChatOptions, ChatResult, ToolDefinition, ToolCall } from './providers/base.js';
 
+// Feeds
+export { startFeeds } from './feeds.js';
+export type { FeedManager, FeedStatus, FeedsDeps } from './feeds.js';
+
 // Types
-export type { AppConfig, ProviderConfig, RecipeConfig, McpServerConfig, AgentConfig, ServerConfig, LogsConfig, Execution, ExecutionStatus } from './types.js';
-export { AppConfigSchema, RecipeConfigSchema, McpServerConfigSchema, ProviderConfigSchema, ServerConfigSchema, LogsConfigSchema, AgentConfigSchema } from './types.js';
+export type { AppConfig, ProviderConfig, RecipeConfig, McpServerConfig, AgentConfig, ServerConfig, LogsConfig, FeedSourceConfig, Execution, ExecutionStatus } from './types.js';
+export { AppConfigSchema, RecipeConfigSchema, McpServerConfigSchema, ProviderConfigSchema, ServerConfigSchema, LogsConfigSchema, AgentConfigSchema, FeedSourceConfigSchema } from './types.js';

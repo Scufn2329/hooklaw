@@ -7,6 +7,8 @@ import { RecipeDetail } from './pages/RecipeDetail.tsx';
 import { Executions } from './pages/Executions.tsx';
 import { Webhooks } from './pages/Webhooks.tsx';
 import { ConfigViewer } from './pages/ConfigViewer.tsx';
+import { CreateRecipe } from './pages/CreateRecipe.tsx';
+import { McpServers } from './pages/McpServers.tsx';
 import { Setup } from './pages/Setup.tsx';
 
 export function App() {
@@ -40,9 +42,11 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="recipes" element={<Recipes />} />
+        <Route path="recipes/new" element={<CreateRecipe />} />
         <Route path="recipes/:id" element={<RecipeDetail />} />
         <Route path="executions" element={<Executions />} />
         <Route path="webhooks" element={<Webhooks />} />
+        <Route path="mcp" element={<McpServers />} />
         <Route path="config" element={<ConfigViewer />} />
         <Route path="*" element={<Navigate to="" replace />} />
       </Route>

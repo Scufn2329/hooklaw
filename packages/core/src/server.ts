@@ -13,6 +13,7 @@ export interface ServerDeps {
   listRecipes?: () => Array<{ id: string; slug: string; description: string; enabled: boolean; mode: string; tools: string[]; provider?: string; model?: string; instructions?: string }>;
   getMcpServers?: () => Array<{ name: string; transport: string; command?: string; args?: string[]; packageName?: string }>;
   updateRecipe?: (recipeId: string, update: Record<string, unknown>) => void;
+  addRecipe?: (recipe: unknown) => void;
   getExecutions?: (slug: string, limit: number, offset: number) => unknown[];
   getRecipeExecutions?: (recipeId: string, limit: number, offset: number) => unknown[];
   getAllExecutions?: (opts: { limit?: number; offset?: number; status?: string; slug?: string; recipeId?: string }) => { executions: unknown[]; total: number };
@@ -21,6 +22,8 @@ export interface ServerDeps {
   checkMcpHealth?: (name: string, force?: boolean) => Promise<{ name: string; status: string; tools?: Array<{ name: string; description: string }>; error?: string; packageName?: string }>;
   checkAllMcpHealth?: () => Promise<Array<{ name: string; status: string; tools?: Array<{ name: string; description: string }>; error?: string; packageName?: string }>>;
   installMcpPackage?: (name: string) => Promise<{ success: boolean; output: string }>;
+  addMcpServer?: (data: unknown) => void;
+  listFeeds?: () => Array<{ id: string; url: string; slug: string; refresh: number; enabled: boolean }>;
   dashboardDir?: string;
   setupMode?: boolean;
   onSetup?: (data: unknown) => Promise<void>;
@@ -161,6 +164,22 @@ export function createServer(deps: ServerDeps): http.Server {
         return sendJson(res, 200, { recipes: [] });
       }
 
+      // POST /api/recipes — create a new recipe
+      if (method === 'POST' && segments[0] === 'api' && segments[1] === 'recipes' && !segments[2]) {
+        if (deps.addRecipe) {
+          try {
+            const body = await parseBody(req) as Record<string, unknown>;
+            deps.addRecipe(body);
+            return sendJson(res, 201, { status: 'ok' });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Create failed';
+            const status = msg.includes('already exists') ? 409 : 400;
+            return sendJson(res, status, { error: msg });
+          }
+        }
+        return sendJson(res, 501, { error: 'Recipe creation not supported' });
+      }
+
       // PATCH /api/recipes/:id — update a recipe
       if (method === 'PATCH' && segments[0] === 'api' && segments[1] === 'recipes' && segments[2] && !segments[3]) {
         if (deps.updateRecipe) {
@@ -240,12 +259,36 @@ export function createServer(deps: ServerDeps): http.Server {
         return sendJson(res, 200, {});
       }
 
+      // GET /api/feeds — list active feed sources
+      if (method === 'GET' && segments[0] === 'api' && segments[1] === 'feeds' && !segments[2]) {
+        if (deps.listFeeds) {
+          return sendJson(res, 200, { feeds: deps.listFeeds() });
+        }
+        return sendJson(res, 200, { feeds: [] });
+      }
+
       // GET /api/mcp-servers — list MCP servers
       if (method === 'GET' && segments[0] === 'api' && segments[1] === 'mcp-servers' && !segments[2]) {
         if (deps.getMcpServers) {
           return sendJson(res, 200, { servers: deps.getMcpServers() });
         }
         return sendJson(res, 200, { servers: [] });
+      }
+
+      // POST /api/mcp-servers — add a new MCP server
+      if (method === 'POST' && segments[0] === 'api' && segments[1] === 'mcp-servers' && !segments[2]) {
+        if (deps.addMcpServer) {
+          try {
+            const body = await parseBody(req);
+            deps.addMcpServer(body);
+            return sendJson(res, 201, { status: 'ok' });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Create failed';
+            const status = msg.includes('already exists') ? 409 : 400;
+            return sendJson(res, status, { error: msg });
+          }
+        }
+        return sendJson(res, 501, { error: 'MCP server creation not supported' });
       }
 
       // GET /api/mcp-servers/health — check all MCP servers health

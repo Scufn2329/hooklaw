@@ -9,6 +9,7 @@ interface SetupData {
   provider: string;
   apiKey: string;
   model: string;
+  hookType: 'webhook' | 'rss';
   slug: string;
   description: string;
   instructions: string;
@@ -16,6 +17,8 @@ interface SetupData {
   port: number;
   mcp?: { name: string; config: { command: string; args: string[] } };
   tools: string[];
+  feedUrl?: string;
+  feedRefresh?: number;
 }
 
 function generateConfig(data: SetupData): string {
@@ -72,7 +75,16 @@ recipes:
 
 logs:
   retention_days: 30
-`;
+${data.hookType === 'rss' && data.feedUrl ? `
+# RSS/Atom feed sources
+feeds:
+  ${data.slug}:
+    url: ${data.feedUrl}
+    slug: ${data.slug}
+    refresh: ${data.feedRefresh ?? 300000}
+    skip_initial: true
+    enabled: true
+` : ''}`;
 }
 
 export interface SetupServerOptions {
