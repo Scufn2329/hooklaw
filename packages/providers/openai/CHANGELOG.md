@@ -1,5 +1,13 @@
 # @lucianfialho/hooklaw-provider-openai
 
+## 3.0.1
+
+### Patch Changes
+
+- docs: add README to all published packages
+- Updated dependencies
+  - @lucianfialho/hooklaw-core@3.0.1
+
 ## 3.0.0
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@lucianfialho/hooklaw-provider-openai",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "OpenAI, OpenRouter, and Ollama providers for HookLaw",
   "type": "module",
   "main": "dist/index.js",

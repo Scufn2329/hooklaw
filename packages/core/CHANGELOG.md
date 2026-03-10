@@ -1,5 +1,11 @@
 # @lucianfialho/hooklaw-core
 
+## 3.0.1
+
+### Patch Changes
+
+- docs: add README to all published packages
+
 ## 3.0.0
 
 ### Minor Changes
