@@ -3,7 +3,7 @@
 Event-driven AI agents with native MCP tools. Webhooks & RSS feeds in. MCP tools out. AI agent in the middle.
 
 ```
-Stripe webhook  ──→  Recipe  ──→  Conta Azul MCP (create invoice)
+Stripe webhook  ──→  Recipe  ──→  QuickBooks MCP (create invoice)
 GitHub webhook  ──→  Recipe  ──→  Slack MCP (post message)
 HN RSS feed     ──→  Recipe  ──→  Slack MCP (daily digest)
 Any event       ──→  Recipe  ──→  Any MCP server

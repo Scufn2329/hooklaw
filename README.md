@@ -21,7 +21,7 @@
 </p>
 
 ```
-  Stripe webhook  ──→  Recipe  ──→  Conta Azul MCP (create invoice)
+  Stripe webhook  ──→  Recipe  ──→  QuickBooks MCP (create invoice)
   GitHub webhook  ──→  Recipe  ──→  Slack MCP (post message)
   HN RSS feed     ──→  Recipe  ──→  Slack MCP (daily digest)
   Any event       ──→  Recipe  ──→  Any MCP server
@@ -34,6 +34,11 @@ HookLaw connects **any event source** (webhooks, RSS/Atom feeds) to **any MCP se
 Other platforms treat webhooks as just another input channel for their AI assistant. HookLaw is **event-first**: every event source gets its own AI agent and MCP tool connections.
 
 - **Proactive, not just reactive** — RSS feeds let your agents monitor the world and act on new information automatically
+- **Multi-agent chains** — recipes trigger other recipes on success/error with depth tracking
+- **Human-in-the-loop** — agents pause for approval before taking action
+- **Agent memory** — conversation context persists across executions
+- **Conditional routing** — AI evaluates which recipe handles each event
+- **Full observability** — traces of every LLM call, tool call, and result
 - **Config-as-code** — one YAML file defines everything, versionable in git
 - **Self-hosted** — your data, your keys, your infrastructure
 - **Interactive setup** — built-in dashboard with guided onboarding wizard
@@ -64,7 +69,7 @@ A recipe connects an event source to MCP tools through an AI agent. Multiple rec
 │   Sources   │     │            HookLaw                    │     │  MCP Servers  │
 │             │     │                                       │     │              │
 │  Stripe   ──┼────▶│  Recipe: payment-to-invoice          │────▶│  Stripe MCP  │
-│  webhook    │     │    AI agent orchestrates the flow     │────▶│  Conta Azul  │
+│  webhook    │     │    AI agent orchestrates the flow     │────▶│  QuickBooks  │
 │             │     │                                       │     │              │
 │  GitHub   ──┼────▶│  Recipe: pr-review                   │────▶│  GitHub MCP  │
 │  webhook    │     │    AI agent reviews code              │     │              │
@@ -144,8 +149,8 @@ recipes:
       model: claude-sonnet-4-6
       instructions: |
         When a Stripe payment succeeds, extract customer details
-        and create an invoice in Conta Azul.
-    tools: [stripe, contaazul]        # MCP servers this recipe uses
+        and create an invoice in QuickBooks.
+    tools: [stripe, quickbooks]       # MCP servers this recipe uses
 
   hn-digest:
     description: "Summarize top HN stories and post to Slack"
@@ -186,6 +191,12 @@ Environment variables (`${VAR}`) are substituted from `.env` or the environment.
 | `POST` | `/api/recipes` | Create a recipe |
 | `PATCH` | `/api/recipes/:id` | Update a recipe |
 | `GET` | `/api/executions` | All executions (filterable) |
+| `GET` | `/api/executions/:id/traces` | Agent reasoning traces |
+| `GET` | `/api/executions/:id/chain` | Child executions in a chain |
+| `POST` | `/api/executions/:id/approve` | Approve/reject execution |
+| `GET` | `/api/approvals` | Pending approval queue |
+| `GET` | `/api/recipes/:id/memory` | Agent memory for a recipe |
+| `DELETE` | `/api/recipes/:id/memory` | Clear agent memory |
 | `GET` | `/api/stats` | Execution statistics |
 | `GET` | `/api/mcp-servers` | List MCP servers |
 | `POST` | `/api/mcp-servers` | Add MCP server |
